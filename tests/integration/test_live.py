@@ -378,3 +378,32 @@ plugins => {
     }
     if output := os.environ.get("GDNSD_COMPRESSED_RESULT_FILE"):
         Path(output).write_text(json.dumps(evidence, indent=2) + "\n")
+
+
+def test_full_global_config_read(target, tmp_path):
+    """Pull the deployed global config across the real Juju action boundary."""
+    import hashlib
+
+    juju, app, _ = target
+    before_n = protected_hash(juju, app)
+    expected = juju.ssh(f"{app}/0", "sudo sha256sum /etc/gdnsd/config").split()[0]
+    root = Path(__file__).resolve().parents[2]
+    output = tmp_path / "global.config"
+    subprocess.run(
+        [
+            "python3",
+            str(root / "scripts/pull_gdnsd_config.py"),
+            "--model",
+            juju.model,
+            "--unit",
+            f"{app}/0",
+            "--global-config",
+            "--file",
+            str(output),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert hashlib.sha256(output.read_bytes()).hexdigest() == expected
+    assert protected_hash(juju, app) == before_n

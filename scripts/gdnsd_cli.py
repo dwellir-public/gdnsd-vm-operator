@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import shutil
 import subprocess
@@ -31,7 +32,26 @@ def action_results(response: dict) -> dict:
     task = candidates[0]
     if task["status"] != "completed":
         raise RuntimeError(task.get("message", f"action status: {task['status']}"))
-    result = task.get("results", {})
+    result = dict(task.get("results", {}))
+    if "content-b64-part-count" in result:
+        try:
+            count = int(result.pop("content-b64-part-count"))
+            if not 1 <= count <= 43 or "content-b64" in result:
+                raise ValueError("invalid count or mixed framing")
+            parts = [result.pop(f"content-b64-part-{i:04d}") for i in range(count)]
+            if any(not isinstance(part, str) or not 0 < len(part) <= 65536 for part in parts):
+                raise ValueError("invalid part size")
+            if any(key.startswith("content-b64-part-") for key in result):
+                raise ValueError("unexpected part")
+            encoded = "".join(parts)
+            content = base64.b64decode(encoded, validate=True)
+            if len(content) > 2 * 1024 * 1024:
+                raise ValueError("content exceeds 2 MiB")
+            if hashlib.sha256(content).hexdigest() != result["sha256"]:
+                raise ValueError("digest mismatch")
+            result["content-b64"] = encoded
+        except (KeyError, ValueError, TypeError) as exc:
+            raise RuntimeError(f"invalid configuration parts: {exc}") from exc
     for key in ("exists", "changed", "validated", "active"):
         if key in result and isinstance(result[key], str):
             if result[key].lower() not in {"true", "false"}:

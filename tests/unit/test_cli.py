@@ -278,3 +278,46 @@ def test_parameter_file_is_visible_outside_snap_private_tmp(monkeypatch):
     monkeypatch.setattr(gdnsd_cli.subprocess, "run", command)
     gdnsd_cli.run_action("ctl:model", "u/0", "get-config", {})
     assert not seen[0].exists()
+
+
+def test_large_action_parts_are_reassembled_with_digest_verification():
+    """Recover complete config bytes from bounded action result fields."""
+    import hashlib
+
+    content = b"configuration\n" * 20000
+    encoded = base64.b64encode(content).decode()
+    parts = [encoded[i : i + 65536] for i in range(0, len(encoded), 65536)]
+    result = {f"content-b64-part-{i:04d}": part for i, part in enumerate(parts)}
+    result.update(
+        {
+            "content-b64-part-count": str(len(parts)),
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "exists": "True",
+        }
+    )
+    decoded = gdnsd_cli.action_results({"unit": {"status": "completed", "results": result}})
+    assert base64.b64decode(decoded["content-b64"]) == content
+    assert decoded["exists"] is True
+    assert not any(key.startswith("content-b64-part-") for key in decoded)
+
+
+@pytest.mark.parametrize("defect", ["missing", "digest", "too-many", "mixed"])
+def test_invalid_large_action_parts_are_rejected(defect):
+    """Do not write a partial, mixed or corrupted large configuration pull."""
+    import hashlib
+
+    result = {
+        "content-b64-part-0000": "eA==",
+        "content-b64-part-count": "1",
+        "sha256": hashlib.sha256(b"x").hexdigest(),
+    }
+    if defect == "missing":
+        result.pop("content-b64-part-0000")
+    elif defect == "digest":
+        result["sha256"] = "a" * 64
+    elif defect == "too-many":
+        result["content-b64-part-count"] = "1000000"
+    else:
+        result["content-b64"] = "eA=="
+    with pytest.raises(RuntimeError, match="configuration parts"):
+        gdnsd_cli.action_results({"unit": {"status": "completed", "results": result}})

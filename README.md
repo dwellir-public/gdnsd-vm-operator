@@ -90,6 +90,14 @@ metadata. There is no distributed rollback; inspect the failed target before ret
 Run separate commands for different models. There is no automatic replication
 between models.
 
+Large configuration reads use numbered base64 result parts when the encoded content
+exceeds 64 KiB. Each part is sent in a separate Juju result call to avoid the
+operating system argument limit. The bundled pull script reassembles the parts
+and verifies their SHA-256 digest before writing the file. Use the updated script
+with this charm revision. Small reads retain the existing `content-b64` field.
+Direct action consumers must join `content-b64-part-0000` and subsequent numbered
+fields according to `content-b64-part-count`, then decode the combined base64.
+
 ## Deployment
 
 ```bash

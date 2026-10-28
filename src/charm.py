@@ -129,7 +129,7 @@ class GdnsdCharm(ops.CharmBase):
                 result = self.workload.service(str(event.params["action"]))
             else:
                 result = self.workload.info()
-            event.set_results(result)
+            self._set_results(event, result)
             if name in {
                 "get_config_action",
                 "validate_config_action",
@@ -163,6 +163,21 @@ class GdnsdCharm(ops.CharmBase):
                 # Invalid targets cannot identify persistent configuration to repair.
                 self._observe_status(request_error=True)
             event.fail(message)
+
+    @staticmethod
+    def _set_results(event: ops.ActionEvent, result: dict) -> None:
+        """Send large configuration reads without oversized process arguments."""
+        content = result.get("content-b64", "")
+        if len(content) <= 65536:
+            event.set_results(result)
+            return
+        parts = [content[i : i + 65536] for i in range(0, len(content), 65536)]
+        for index, part in enumerate(parts):
+            event.set_results({f"content-b64-part-{index:04d}": part})
+        event.set_results(
+            {key: value for key, value in result.items() if key != "content-b64"}
+            | {"content-b64-part-count": len(parts)}
+        )
 
     @staticmethod
     def _configuration_key(event: ops.ActionEvent) -> str:

@@ -647,3 +647,34 @@ def test_fresh_node_without_database_can_be_healthy(ctx, workload):
     }
     state = ctx.run(ctx.on.update_status(), State())
     assert state.unit_status == ops.ActiveStatus("running; GeoIP not installed")
+
+
+def test_large_config_uses_bounded_result_parts(ctx, workload):
+    """A full global config must not become one oversized action-set argument."""
+    import base64
+    import hashlib
+
+    _, host = workload
+    content = b"large configuration line\n" * 10000
+    encoded = base64.b64encode(content).decode()
+    host.read.return_value = {
+        "content-b64": encoded,
+        "sha256": hashlib.sha256(content).hexdigest(),
+        "exists": True,
+    }
+    calls = []
+    original = ops.ActionEvent.set_results
+
+    def bounded_set(event, result):
+        assert all(len(str(value)) <= 65536 for value in result.values())
+        calls.append(result.copy())
+        return original(event, result)
+
+    with patch.object(ops.ActionEvent, "set_results", bounded_set):
+        ctx.run(ctx.on.action("get-config", params={"scope": "global"}), State())
+    assert len(calls) > 1
+    count = int(ctx.action_results["content-b64-part-count"])
+    joined = "".join(ctx.action_results[f"content-b64-part-{i:04d}"] for i in range(count))
+    assert joined == encoded
+    assert ctx.action_results["sha256"] == host.read.return_value["sha256"]
+    assert "content-b64" not in ctx.action_results
