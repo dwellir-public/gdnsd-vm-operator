@@ -1,0 +1,55 @@
+{
+    "Return": true,
+    "RevokedSecurityGroupRules": [
+        {
+            "SecurityGroupRuleId": "sgr-0d832f03418925d71",
+            "GroupId": "sg-0ebac75aa246c291c",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "18.181.231.202/32",
+            "Description": "hyperborea:erik-lonroth@external/gdnsd-ap - observability HTTPS"
+        },
+        {
+            "SecurityGroupRuleId": "sgr-086e798b27b034e66",
+            "GroupId": "sg-0ebac75aa246c291c",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "44.201.71.32/32",
+            "Description": "hyperborea:erik-lonroth@external/gdnsd-us - observability HTTPS"
+        },
+        {
+            "SecurityGroupRuleId": "sgr-0e6169609613e7819",
+            "GroupId": "sg-0ebac75aa246c291c",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "44.243.1.147/32",
+            "Description": "hyperborea:erik-lonroth@external/gdnsd-us-west - observability HTTPS"
+        },
+        {
+            "SecurityGroupRuleId": "sgr-0176615737d3b5154",
+            "GroupId": "sg-0ebac75aa246c291c",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "185.127.230.198/32",
+            "Description": "Erik laptop - observability-stack Grafana HTTPS"
+        },
+        {
+            "SecurityGroupRuleId": "sgr-0e5059bb7224e8151",
+            "GroupId": "sg-0ebac75aa246c291c",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "63.184.230.135/32",
+            "Description": "hyperborea:erik-lonroth@external/gdnsd-nl - observability HTTPS"
+        }
+    ]
+}

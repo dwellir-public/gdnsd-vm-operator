@@ -1,0 +1,317 @@
+[
+  {
+    "selection": "All",
+    "title": "gdnsd native server metrics - Dashboards - Grafana",
+    "url": "https://cos1-eu.monitoring.dwellir.tech/cos-grafana/d/826f00b525b56478a185aca83b14018968364ae7/gdnsd-native-server-metrics?orgId=1&from=now-15m&to=now&timezone=browser&var-prometheusds=P5B2771758744AFEA&var-lokids=PA458FCD687B4FF36&var-juju_model=$__all&var-juju_model_uuid=$__all&var-juju_application=$__all&var-juju_unit=$__all&refresh=15s",
+    "no_data_count": 0,
+    "queries": [
+      {
+        "status": 200,
+        "expressions": [
+          "sum by (juju_model, protocol, operation) (rate(gdnsd_transport_errors_total{juju_application=~\".+\",juju_model=~\".+\",juju_model_uuid=~\".+\",juju_unit=~\".+\"}[$__rate_interval]))"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 20,
+            "rows": [
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "sum by (juju_model, protocol) (rate(gdnsd_requests_total{juju_application=~\".+\",juju_model=~\".+\",juju_model_uuid=~\".+\",juju_unit=~\".+\"}[$__rate_interval]))"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 8,
+            "rows": [
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "gdnsd_scrape_success{juju_application=~\".+\",juju_model=~\".+\",juju_model_uuid=~\".+\",juju_unit=~\".+\"}"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 4,
+            "rows": [
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "sum by (juju_model, rcode) (rate(gdnsd_responses_total{juju_application=~\".+\",juju_model=~\".+\",juju_model_uuid=~\".+\",juju_unit=~\".+\"}[$__rate_interval]))"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 24,
+            "rows": [
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "gdnsd_uptime_seconds{juju_application=~\".+\",juju_model=~\".+\",juju_model_uuid=~\".+\",juju_unit=~\".+\"}"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 4,
+            "rows": [
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "sum by (juju_model, protocol) (increase(gdnsd_requests_total{juju_application=~\".+\",juju_model=~\".+\",juju_model_uuid=~\".+\",juju_unit=~\".+\"}[$__range]))"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 8,
+            "rows": [
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "{juju_charm=\"gdnsd-vm\", juju_model=~\".+\", juju_model_uuid=~\".+\", juju_application=~\".+\", juju_unit=~\".+\"}"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 1,
+            "rows": [
+              308
+            ]
+          }
+        }
+      }
+    ],
+    "body": "Skip to main content\nGrafana\nHome\nBookmarks\nStarred\nDashboards\nExplore\nDrilldown\nNew!\nAlerting\nConnections\nAdministration\nHome\nDashboards\ngdnsd native server metrics\nSearch...\nctrl+k\nEdit\nExport\u00a0\nShare\nprometheusds\njuju_cos_bc4fbf7c-0b26-4001-8607-2639553c835a_prometheus_0\nlokids\njuju_cos_bc4fbf7c-0b26-4001-8607-2639553c835a_loki_0\njuju_model\nAll\njuju_model_uuid\nAll\njuju_application\nAll\njuju_unit\nAll\nLast 15 minutes\nRefresh\nQuery rate by protocol\ngdnsd-ap tcp\ngdnsd-ap udp\ngdnsd-nl tcp\ngdnsd-nl udp\ngdnsd-us tcp\ngdnsd-us udp\ngdnsd-us-west tcp\ngdnsd-us-west udp\nResponses by code\ngdnsd-ap BADVERS\ngdnsd-ap FORMERR\ngdnsd-ap NOERROR\ngdnsd-ap NOTIMP\ngdnsd-ap NXDOMAIN\ngdnsd-ap REFUSED\ngdnsd-nl BADVERS\ngdnsd-nl FORMERR\ngdnsd-nl NOERROR\ngdnsd-nl NOTIMP\ngdnsd-nl NXDOMAIN\ngdnsd-nl REFUSED\ngdnsd-us BADVERS\ngdnsd-us FORMERR\ngdnsd-us NOERROR\ngdnsd-us NOTIMP\ngdnsd-us NXDOMAIN\ngdnsd-us REFUSED\ngdnsd-us-west BADVERS\ngdnsd-us-west FORMERR\ngdnsd-us-west NOERROR\ngdnsd-us-west NOTIMP\ngdnsd-us-west NXDOMAIN\ngdnsd-us-west REFUSED\nTransport error rate\ngdnsd-ap tcp accept\ngdnsd-ap tcp recv\ngdnsd-ap udp recv\ngdnsd-ap tcp send\ngdnsd-ap udp send\ngdnsd-nl tcp accept\ngdnsd-nl tcp recv\ngdnsd-nl udp recv\ngdnsd-nl tcp send\ngdnsd-nl udp send\ngdnsd-us tcp accept\ngdnsd-us tcp recv\ngdnsd-us udp recv\ngdnsd-us tcp send\ngdnsd-us udp send\ngdnsd-us-west tcp accept\ngdnsd-us-west tcp recv\ngdnsd-us-west udp recv\ngdnsd-us-west tcp send\ngdnsd-us-west udp send\nDaemon uptime\ngdnsd-ap\ngdnsd-nl\ngdnsd-us\ngdnsd-us-west\nNative stats collection\ngdnsd-ap\ngdnsd-nl\ngdnsd-us\ngdnsd-us-west\nRequests in selected range\ngdnsd-ap tcp\ngdnsd-ap udp\ngdnsd-nl tcp\ngdnsd-nl udp\ngdnsd-us tcp\ngdnsd-us udp\ngdnsd-us-west tcp\ngdnsd-us-west udp\ngdnsd and exporter journal\n\t\t2026-10-28 18:00:32.843\t\nstate of '185.176.96.151/_health_api-zetachain-mainnet_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 18:00:27.626\t\nstate of '185.176.96.151/x_import__health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:27.603\t\nstate of '185.127.230.23/x_import__health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:25.115\t\nstate of '185.176.96.151/_health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:25.103\t\nstate of '185.127.230.23/_health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:24.906\t\nstate of '185.176.96.151/x_import__health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:24.880\t\nstate of '185.127.230.23/x_import__health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:22.461\t\nstate of '185.176.96.151/x_import__health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:22.433\t\nstate of '185.127.230.23/x_import__health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:21.559\t\nstate of '185.176.96.151/_health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:21.542\t\nstate of '185.127.230.23/_health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:19.966\t\nstate of '185.176.96.151/_health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:19.943\t\nstate of '185.127.230.23/_health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:19.733\t\nstate of '185.176.96.151/x_import__health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:19.706\t\nstate of '185.127.230.23/x_import__health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:16.612\t\nstate of '185.127.230.23/_health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:16.555\t\nstate of '185.176.96.151/_health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:10.869\t\nstate of '185.127.230.23/_health_api-robinhood-mainnet-sequencer_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:10.237\t\nstate of '185.176.96.151/_health_api-encointer-kusama_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:10.222\t\nstate of '185.127.230.23/_health_api-encointer-kusama_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:03.071\t\nstate of '185.127.230.23/_health_api-robinhood-mainnet-sequencer_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 18:00:00.014\t\nstate of '185.176.96.151/_health_api-encointer-kusama_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:59:59.965\t\nstate of '185.127.230.23/_health_api-encointer-kusama_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:59:07.079\t\nstate of '185.127.230.25/_health_hydration-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:59:06.674\t\nstate of '185.127.230.23/_health_api-starknet-sepolia_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:59:05.569\t\nstate of '185.127.230.23/_health_api-ethereum-sepolia_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:59:00.482\t\nstate of '185.127.230.23/_health_api-pulsechain-testnet-v4_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:59:00.422\t\nstate of '185.176.96.151/_health_api-pendulum_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:59.460\t\nstate of '185.176.96.154/_health_enjin-matrix-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:59.357\t\nstate of '185.127.230.25/_health_hydration-rpc_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:59.038\t\nstate of '185.127.230.23/_health_api-starknet-sepolia_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:58.736\t\nstate of '185.127.230.23/_health_api-stable-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:58.164\t\nstate of '185.127.230.23/_health_api-bridge-hub-kusama_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:57.762\t\nstate of '185.127.230.23/_health_api-ethereum-sepolia_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:56.909\t\nstate of '185.127.230.23/_health_api-unique_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:55.932\t\nstate of '185.127.230.23/_health_api-people-kusama_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:55.260\t\nstate of '185.176.96.151/_health_api-taiko-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:54.873\t\nstate of '185.127.230.23/_health_api-bittensor-testnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:52.659\t\nstate of '185.176.96.151/_health_api-pendulum_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:52.426\t\nstate of '185.176.96.151/_health_api-zora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:51.702\t\nstate of '185.176.96.154/_health_enjin-matrix-rpc_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:51.631\t\nstate of '185.176.96.154/_health_enjin-canary-relay-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:51.237\t\nstate of '185.176.96.151/_health_api-coretime-polkadot_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:50.877\t\nstate of '185.127.230.23/_health_api-robinhood-mainnet-sequencer_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:50.405\t\nstate of '185.127.230.23/_health_api-bridge-hub-kusama_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:49.789\t\nstate of '185.127.230.25/_health_paseo-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:49.130\t\nstate of '185.127.230.23/_health_api-unique_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:48.901\t\nstate of '185.127.230.23/_health_api-stable-mainnet_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:48.309\t\nstate of '185.127.230.23/_health_api-people-kusama_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:48.076\t\nstate of '185.127.230.23/_health_api-bifrost-kusama_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:47.941\t\nstate of '185.127.230.23/_health_api-shibuya_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:47.932\t\nstate of '185.127.230.23/_health_api-astar_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:47.748\t\nstate of '185.127.230.23/_health_api-asset-hub-paseo_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:47.203\t\nstate of '185.127.230.25/_health_encointer-kusama-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:47.140\t\nstate of '185.176.96.154/_health_heima-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:47.079\t\nstate of '185.127.230.23/_health_api-bittensor-testnet_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:46.441\t\nstate of '185.176.96.151/_health_api-taiko-mainnet_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:46.411\t\nstate of '185.176.96.151/_health_api-polygon-mainnet-full_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:46.299\t\nstate of '185.176.96.151/_health_api-chiliz-mainnet-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:46.276\t\nstate of '185.127.230.23/_health_api-polygon-amoy_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:45.515\t\nstate of '185.127.230.23/_health_api-ethereum-mainnet-caplin_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:45.053\t\nINFO:__main__:\"GET /production-cos-validation-20261028 HTTP/1.1\" 404 -\n\t\n\t\t2026-10-28 17:58:45.053\t\nINFO:__main__:code 404, message Not Found\n\t\n\t\t2026-10-28 17:58:44.618\t\nstate of '185.176.96.151/_health_api-zora-mainnet_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:43.603\t\nstate of '51.195.24.110/_health_redstone-monad-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:43.434\t\nstate of '185.176.96.151/_health_api-coretime-polkadot_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:43.427\t\nstate of '185.127.230.23/_health_paribu-waves-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:43.069\t\nstate of '185.127.230.23/_health_api-robinhood-mainnet-sequencer_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:42.682\t\nstate of '185.127.230.23/_health_api-pulsechain-testnet-v4_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:42.233\t\nstate of '185.127.230.23/_health_api-unichain-sepolia_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:42.044\t\nstate of '185.127.230.25/_health_paseo-rpc_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:41.794\t\nstate of '185.176.96.154/_health_enjin-canary-relay-rpc_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:40.553\t\nstate of '185.176.96.151/_health_api-xxnetwork_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:40.314\t\nstate of '185.127.230.23/_health_api-bifrost-kusama_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:40.177\t\nstate of '185.127.230.23/_health_api-shibuya_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:40.131\t\nstate of '185.127.230.23/_health_api-astar_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:39.995\t\nstate of '185.127.230.23/_health_api-asset-hub-paseo_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:39.334\t\nstate of '185.176.96.154/_health_heima-rpc_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:39.196\t\nstate of '185.176.96.154/_health_hydration-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:38.605\t\nstate of '185.176.96.151/_health_api-polygon-mainnet-full_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:38.491\t\nstate of '185.127.230.23/_health_api-polygon-amoy_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:37.808\t\nstate of '185.127.230.23/_health_api-ethereum-mainnet-caplin_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:37.602\t\nstate of '185.127.230.23/_health_api-acala_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:37.465\t\nstate of '185.176.96.151/_health_api-chiliz-mainnet-archive_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:37.370\t\nstate of '185.127.230.25/_health_people-kusama-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:37.231\t\nstate of '185.127.230.25/_health_collectives-polkadot-rpc_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:35.894\t\nstate of '51.195.24.110/_health_redstone-monad-mainnet_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:35.622\t\nstate of '185.127.230.23/_health_paribu-waves-mainnet_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:35.390\t\nstate of '185.176.96.151/_health_api-ethereum-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:34.610\t\nstate of '185.127.230.23/_health_api-aventus_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:34.505\t\nstate of '185.127.230.23/_health_api-unichain-sepolia_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:32.796\t\nstate of '185.176.96.151/_health_api-xxnetwork_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:32.192\t\nstate of '185.176.96.151/_health_api-sonic-mainnet-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:30.788\t\nstate of '185.127.230.25/_health_paseo-boot-1_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:30.259\t\nstate of '185.127.230.23/_health_api-liberland_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:58:29.857\t\nstate of '185.127.230.23/_health_api-acala_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10-28 17:58:29.630\t\nstate of '185.127.230.25/_health_people-kusama-rpc_n_dwellir_com' changed from UP/10 to DOWN/10\n\t\n\t\t2026-10"
+  },
+  {
+    "selection": "Frankfurt",
+    "title": "gdnsd native server metrics - Dashboards - Grafana",
+    "url": "https://cos1-eu.monitoring.dwellir.tech/cos-grafana/d/826f00b525b56478a185aca83b14018968364ae7/gdnsd-native-server-metrics?orgId=1&from=now-15m&to=now&var-juju_model=gdnsd-nl&var-juju_application=gdnsd-vm&var-juju_unit=gdnsd-vm%2F0&timezone=browser&var-prometheusds=P5B2771758744AFEA&var-lokids=PA458FCD687B4FF36&var-juju_model_uuid=$__all&refresh=15s",
+    "no_data_count": 0,
+    "queries": [
+      {
+        "status": 200,
+        "expressions": [
+          "sum by (juju_model, rcode) (rate(gdnsd_responses_total{juju_application=~\"gdnsd-vm\",juju_model=~\"gdnsd-nl\",juju_model_uuid=~\".+\",juju_unit=~\"gdnsd-vm/0\"}[$__rate_interval]))"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 6,
+            "rows": [
+              5,
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "sum by (juju_model, protocol) (rate(gdnsd_requests_total{juju_application=~\"gdnsd-vm\",juju_model=~\"gdnsd-nl\",juju_model_uuid=~\".+\",juju_unit=~\"gdnsd-vm/0\"}[$__rate_interval]))"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 2,
+            "rows": [
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "gdnsd_uptime_seconds{juju_application=~\"gdnsd-vm\",juju_model=~\"gdnsd-nl\",juju_model_uuid=~\".+\",juju_unit=~\"gdnsd-vm/0\"}"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 1,
+            "rows": [
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "gdnsd_scrape_success{juju_application=~\"gdnsd-vm\",juju_model=~\"gdnsd-nl\",juju_model_uuid=~\".+\",juju_unit=~\"gdnsd-vm/0\"}"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 1,
+            "rows": [
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "sum by (juju_model, protocol, operation) (rate(gdnsd_transport_errors_total{juju_application=~\"gdnsd-vm\",juju_model=~\"gdnsd-nl\",juju_model_uuid=~\".+\",juju_unit=~\"gdnsd-vm/0\"}[$__rate_interval]))"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 5,
+            "rows": [
+              5,
+              5,
+              5,
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "sum by (juju_model, protocol) (increase(gdnsd_requests_total{juju_application=~\"gdnsd-vm\",juju_model=~\"gdnsd-nl\",juju_model_uuid=~\".+\",juju_unit=~\"gdnsd-vm/0\"}[$__range]))"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 2,
+            "rows": [
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "status": 200,
+        "expressions": [
+          "{juju_charm=\"gdnsd-vm\", juju_model=~\"gdnsd-nl\", juju_model_uuid=~\".+\", juju_application=~\"gdnsd-vm\", juju_unit=~\"gdnsd-vm/0\"}"
+        ],
+        "results": {
+          "A": {
+            "error": null,
+            "status": 200,
+            "frames": 1,
+            "rows": [
+              6
+            ]
+          }
+        }
+      }
+    ],
+    "body": "Skip to main content\nGrafana\nHome\nBookmarks\nStarred\nDashboards\nExplore\nDrilldown\nNew!\nAlerting\nConnections\nAdministration\nHome\nDashboards\ngdnsd native server metrics\nSearch...\nctrl+k\nEdit\nExport\u00a0\nShare\nprometheusds\njuju_cos_bc4fbf7c-0b26-4001-8607-2639553c835a_prometheus_0\nlokids\njuju_cos_bc4fbf7c-0b26-4001-8607-2639553c835a_loki_0\njuju_model\ngdnsd-nl\njuju_model_uuid\nAll\njuju_application\ngdnsd-vm\njuju_unit\ngdnsd-vm/0\nLast 15 minutes\nRefresh\nQuery rate by protocol\ngdnsd-nl tcp\ngdnsd-nl udp\nResponses by code\ngdnsd-nl BADVERS\ngdnsd-nl FORMERR\ngdnsd-nl NOERROR\ngdnsd-nl NOTIMP\ngdnsd-nl NXDOMAIN\ngdnsd-nl REFUSED\nTransport error rate\ngdnsd-nl tcp accept\ngdnsd-nl tcp recv\ngdnsd-nl udp recv\ngdnsd-nl tcp send\ngdnsd-nl udp send\nDaemon uptime\ngdnsd-nl\nNative stats collection\ngdnsd-nl\nRequests in selected range\ngdnsd-nl tcp\ngdnsd-nl udp\ngdnsd and exporter journal\n\t\t2026-10-28 18:00:24.906\t\nstate of '185.176.96.151/x_import__health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:24.880\t\nstate of '185.127.230.23/x_import__health_api-manta-pacific-archive_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:19.733\t\nstate of '185.176.96.151/x_import__health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 18:00:19.706\t\nstate of '185.127.230.23/x_import__health_api-sora-mainnet_n_dwellir_com' changed from DOWN/10 to UP/10\n\t\n\t\t2026-10-28 17:55:31.825\t\nINFO:__main__:\"GET /production-cos-validation-20261028 HTTP/1.1\" 404 -\n\t\n\t\t2026-10-28 17:55:31.824\t\nINFO:__main__:code 404, message Not Found\n\t"
+  }
+]

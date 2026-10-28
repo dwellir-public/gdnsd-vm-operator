@@ -69,3 +69,14 @@ rules with controller-qualified source model descriptions restored connectivity.
 Fresh metrics and journal markers were verified for all four models. Grafana
 browser checks remain pending because the credential action timed out. The
 validation report records rule IDs, sources, evidence and rollback scope.
+
+## Current production backend
+
+At the user's request, all four models now use the more production COS stack,
+`hyperborea:zerosoftwere@external/cos`, instead of the test observability-stack.
+The [production migration report](../validation-observability-production.md)
+records new allowlist rules, retired old rules/relations, fresh metrics and
+logs from all four models, and completed browser checks for default All and
+specific Frankfurt filters. This resolves the earlier backend/browser gaps.
+The All-filter log query now includes a fixed gdnsd charm matcher so shared
+stack logs from other workloads cannot appear. Lint and 173 unit tests pass.

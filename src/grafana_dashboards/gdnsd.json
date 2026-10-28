@@ -274,7 +274,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_application=~\"$juju_application\",juju_unit=~\"$juju_unit\"}"
+          "expr": "{juju_charm=\"gdnsd-vm\",juju_model=~\"$juju_model\",juju_model_uuid=~\"$juju_model_uuid\",juju_application=~\"$juju_application\",juju_unit=~\"$juju_unit\"}"
         }
       ],
       "gridPos": {

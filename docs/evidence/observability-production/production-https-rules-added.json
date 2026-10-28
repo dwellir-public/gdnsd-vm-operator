@@ -1,0 +1,65 @@
+{
+    "Return": true,
+    "SecurityGroupRules": [
+        {
+            "SecurityGroupRuleId": "sgr-0195a4f8ee4740a7a",
+            "GroupId": "sg-0a0ad3d605efad1ee",
+            "GroupOwnerId": "859262838398",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "44.201.71.32/32",
+            "Description": "hyperborea:erik-lonroth@external/gdnsd-us - observability HTTPS",
+            "SecurityGroupRuleArn": "arn:aws:ec2:eu-north-1:859262838398:security-group-rule/sgr-0195a4f8ee4740a7a"
+        },
+        {
+            "SecurityGroupRuleId": "sgr-06c5f28622b280495",
+            "GroupId": "sg-0a0ad3d605efad1ee",
+            "GroupOwnerId": "859262838398",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "18.181.231.202/32",
+            "Description": "hyperborea:erik-lonroth@external/gdnsd-ap - observability HTTPS",
+            "SecurityGroupRuleArn": "arn:aws:ec2:eu-north-1:859262838398:security-group-rule/sgr-06c5f28622b280495"
+        },
+        {
+            "SecurityGroupRuleId": "sgr-0c5e305e675bfe899",
+            "GroupId": "sg-0a0ad3d605efad1ee",
+            "GroupOwnerId": "859262838398",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "63.184.230.135/32",
+            "Description": "hyperborea:erik-lonroth@external/gdnsd-nl - observability HTTPS",
+            "SecurityGroupRuleArn": "arn:aws:ec2:eu-north-1:859262838398:security-group-rule/sgr-0c5e305e675bfe899"
+        },
+        {
+            "SecurityGroupRuleId": "sgr-0cc6491f0bb1d5eb1",
+            "GroupId": "sg-0a0ad3d605efad1ee",
+            "GroupOwnerId": "859262838398",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "44.243.1.147/32",
+            "Description": "hyperborea:erik-lonroth@external/gdnsd-us-west - observability HTTPS",
+            "SecurityGroupRuleArn": "arn:aws:ec2:eu-north-1:859262838398:security-group-rule/sgr-0cc6491f0bb1d5eb1"
+        },
+        {
+            "SecurityGroupRuleId": "sgr-0fcbbc28646b72a6e",
+            "GroupId": "sg-0a0ad3d605efad1ee",
+            "GroupOwnerId": "859262838398",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIpv4": "185.127.230.198/32",
+            "Description": "Erik laptop - production cos Grafana HTTPS",
+            "SecurityGroupRuleArn": "arn:aws:ec2:eu-north-1:859262838398:security-group-rule/sgr-0fcbbc28646b72a6e"
+        }
+    ]
+}

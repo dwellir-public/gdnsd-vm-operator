@@ -240,12 +240,12 @@ to the Grafana offer. For example, with your controller-qualified test model:
 juju deploy -m "$MODEL" alloy-sub --channel latest/edge --revision 36
 juju integrate -m "$MODEL" gdnsd-vm:juju-info alloy-sub:juju-info
 juju integrate -m "$MODEL" gdnsd-vm:machine-observability alloy-sub:machine-observability
-juju consume -m "$MODEL" hyperborea:zerosoftwere@external/observability-stack.prometheus
-juju consume -m "$MODEL" hyperborea:zerosoftwere@external/observability-stack.loki
-juju consume -m "$MODEL" hyperborea:zerosoftwere@external/observability-stack.grafana
-juju integrate -m "$MODEL" alloy-sub:send-remote-write prometheus:receive-remote-write
-juju integrate -m "$MODEL" alloy-sub:send-loki-logs loki:logging
-juju integrate -m "$MODEL" gdnsd-vm:grafana-dashboard grafana:grafana-dashboard
+juju consume -m "$MODEL" hyperborea:zerosoftwere@external/cos.prometheus cos-prometheus
+juju consume -m "$MODEL" hyperborea:zerosoftwere@external/cos.loki cos-loki
+juju consume -m "$MODEL" hyperborea:zerosoftwere@external/cos.grafana cos-grafana
+juju integrate -m "$MODEL" alloy-sub:send-remote-write cos-prometheus:receive-remote-write
+juju integrate -m "$MODEL" alloy-sub:send-loki-logs cos-loki:logging
+juju integrate -m "$MODEL" gdnsd-vm:grafana-dashboard cos-grafana:grafana-dashboard
 ```
 
 The v3 declaration includes gdnsd and exporter journals and no alert artifacts.
@@ -270,3 +270,13 @@ To diagnose local collection, run `curl -fsS http://127.0.0.1:9153/metrics` on
 the unit and inspect `journalctl -u gdnsd-exporter.service`. A healthy local
 endpoint does not prove backend delivery. Check recent Prometheus samples and
 Loki entries with the principal's Juju labels before relying on monitoring.
+
+The retained DNS models use the production COS offers in
+`hyperborea:zerosoftwere@external/cos`. Open
+[Grafana](https://cos1-eu.monitoring.dwellir.tech/cos-grafana/) or the
+[gdnsd dashboard](https://cos1-eu.monitoring.dwellir.tech/cos-grafana/d/826f00b525b56478a185aca83b14018968364ae7/gdnsd-native-server-metrics).
+The older `observability-stack` offers belong to the separate test stack and
+are no longer connected to these models. Backend HTTPS access is restricted by
+an AWS allowlist. Keep each source rule labeled with its Juju model, and update
+it if the instance's public address changes. Credentials remain outside this
+repository; obtain them through the Grafana charm action.
