@@ -1,5 +1,0 @@
-1ca72aab98469e958b8c44e0b216fab9067fdc1a8ee7651acab72d1173142680  /etc/gdnsd/config
-37f0d33b61da19ee0a78bcc838436b0a3d3a57c965b02b79c1e03b8b725f9ed8  /etc/gdnsd/zones/n.dwellir.com
-ac098c925ff5a381de6a2f372892e901ea8f4b89abc0f02a2707dddec3b3b06d  /etc/gdnsd/zones/x.dwellir.com
-MainPID=20227
-gdnsd	3.8.2-1build2

@@ -1,3 +1,0 @@
-1de3cbf28aa9da28dc5680e6e746121a1141f8e85310e87220c4e350dc1ad3d3  SKILL.md
-e6e969943d91b671c00757d39bd1d783f1eae5a374872f94e2fba0b8a544cb5d  references/workflow-change.md
-d136dec5a89d75ddc219023221ba771597013568ce14678245704d9fa79117fd  references/testing-and-validation.md

@@ -32,10 +32,22 @@ uv run tox -e integration
 
 Omit `GDNSD_DEPLOY` to validate an existing deployment. Set `GDNSD_REFRESH=1`
 to exercise refresh from the specified local artifact. Use a different artifact
-revision for refresh checks. All record writes are restricted to x.dwellir.com;
-production n is never written. Global configuration changes are tested only on
-a fresh model without an n zone and require `GDNSD_TEST_GLOBAL=1`. Set `GDNSD_TEST_GEOIP=1` on that fresh
+revision for refresh checks. Record-writing checks use the lab zone defined in
+`tests/integration/test_live.py`. Global configuration changes are tested only on
+a fresh model and require `GDNSD_TEST_GLOBAL=1`. Set `GDNSD_TEST_GEOIP=1` on that fresh
 model to exercise URL memory, data validation and replacement with the pinned
 MaxMind test fixture. This is test data, not a production GeoIP update.
 
-See [validation](docs/validation.md) for recorded results and known limits.
+## Releases
+
+The [release workflow](.github/workflows/release.yml) runs manually. It builds
+Ubuntu 24.04 on amd64, uploads the charm to Charmhub's `latest/edge` channel,
+and creates a GitHub release with the artifact and source commit. It uses the
+repository's `CHARMHUB_TOKEN` secret as `CHARMCRAFT_AUTH` during upload.
+
+```bash
+gh workflow run release.yml --repo dwellir-public/gdnsd-vm-operator --ref main
+```
+
+A normal push runs lint and unit tests. It does not publish a Charmhub revision.
+For documentation changes, push the commit without dispatching the release workflow.

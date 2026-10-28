@@ -75,21 +75,13 @@ make unrelated external writers participate in the transaction.
 
 The charm opens UDP and TCP port 53. Juju exposure and parent delegation are
 separate operator steps. Local `gdnsdctl` calls use its Unix socket. No TCP
-management listener or external HTTP API is added. No telemetry integrations,
-blockchain interfaces, storage declarations or automatic zone replication are
-provided. GeoIP updates use the explicit sync-geoip action; mock-health endpoints remain
+management listener or external configuration API is added. Metrics and logs
+are declared over machine-observability, and dashboards use grafana-dashboard.
+No storage declaration or automatic zone replication is provided. GeoIP updates use the explicit sync-geoip action; mock-health endpoints remain
 externally managed. The per-unit StoredState retains the URL and scoped
 configuration errors across hooks and refreshes. Failed configuration requests
 produce waiting status until a matching valid candidate resolves the problem.
 Healthy status observations do not clear that record.
-
-For this experiment, production n is unchanged, x is writable, and parent
-dwellir.com changes must use the DNSControl repository. All four test servers
-now hold direct-only n copies, created or confirmed from the original source
-under explicit authorization. They reuse existing resources, so adding them
-requires no global config change. Public n delegation and glue still point
-only to production. The n-zone guard is restored after authorized test-copy
-updates.
 
 ## Observability
 
@@ -112,4 +104,4 @@ principal unit from juju-info before considering the payload topology fallback.
 This preserves per-unit source labels even for a multiunit application.
 The payload contains no alert artifacts. Grafana dashboards use the separate
 Grafana relation. Library origins and hashes are recorded in
-[the implementation plan](docs/plans/native-observability.md).
+[vendored libraries](docs/libraries.md).

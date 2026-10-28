@@ -100,27 +100,26 @@ fields according to `content-b64-part-count`, then decode the combined base64.
 
 ## Deployment
 
+Deploy the published charm from Charmhub:
+
 ```bash
-charmcraft pack
-juju deploy ./gdnsd-vm_amd64.charm \
-  --model CONTROLLER:MODEL --to 0
+juju deploy gdnsd-vm --channel latest/edge \
+  --model CONTROLLER:MODEL --base ubuntu@24.04
 juju expose gdnsd-vm --model CONTROLLER:MODEL
 ```
+
+For a local build, run `charmcraft pack` and deploy the generated
+`gdnsd-vm_amd64.charm` file instead.
 
 Verify the actual artifact filename emitted by charmcraft. The charm opens
 UDP/TCP port 53. Fresh installations bind localhost and the unit's private IP;
 existing listener configuration is preserved. Supply a zone before expecting
 useful public answers. Configure delegation separately in the parent zone.
 
-For the Dwellir experiment, `x.dwellir.com` is writable. Production
-`n.dwellir.com` records, delegation and Aloha configuration must remain unchanged.
-The four gdnsd servers also hold isolated n copies for direct-IP queries only.
-Their n zones remain protected by default; an explicitly authorized test-copy
-sync temporarily relaxes the guard and restores it afterward. These copies are
-not registered or delegated in public DNS. See
-[the direct-copy validation](docs/validation-n-direct.md).
-Every change to the parent `dwellir.com` zone must use the separate
-[dwellir-dns repository](https://github.com/dwellir-public/dwellir-dns).
+Use `protected-zones` to prevent actions from changing selected zones or their
+children. Global configuration and shared GeoIP changes can affect every served
+zone, so assess those effects before applying them. Manage parent-zone records
+and delegation through your normal DNS management process.
 
 ## Update the GeoIP database
 
@@ -166,9 +165,8 @@ service health failure takes priority and reports `blocked`. Correcting another
 zone or restarting the service does not hide an unresolved configuration error.
 
 The database is shared by configured GeoIP resources. The action refuses a
-replacement when a protected zone file is present. For this experiment, use the
-Frankfurt instance for database replacement tests; the existing US/Tokyo n copies
-and their shared database remain unchanged.
+replacement when a protected zone file is present. Database replacement can
+affect every zone using those resources.
 
 ## Local health and workload version
 
@@ -205,17 +203,13 @@ is observational. `get-info` reports the running and package versions and servic
 `sync-geoip` manages the GeoIP database using its remembered per-unit URL.
 Configuration backups are local recovery material, not an off-machine backup.
 
-See the latest [compressed GeoIP upgrade validation](docs/validation-compressed-geoip.md),
-[architecture](ARCHITECTURE.md), [development](DEVELOPING.md) and the
-[approved design](docs/superpowers/specs/2026-10-28-gdnsd-vm-design.md).
+See [architecture](ARCHITECTURE.md) for implementation details and
+[development](DEVELOPING.md) for build, test and release commands.
 
 ## References
 
 - [gdnsd control commands](https://github.com/gdnsd/gdnsd/blob/v3.8.2/docs/gdnsdctl.podin)
 - [Ubuntu Noble gdnsd package](https://packages.ubuntu.com/noble/net/gdnsd)
-
-US West deployment and the large configuration read repair are recorded in
-[docs/validation-us-west.md](docs/validation-us-west.md).
 
 ## Metrics and logs
 
@@ -225,8 +219,7 @@ local control socket. It does not open a public port. Refreshing the charm
 updates this auxiliary service without restarting or upgrading gdnsd.
 
 Counters cover every zone served by the daemon, including direct test queries
-and local health probes. They cannot distinguish production n traffic from x
-traffic. This implementation does not record client addresses or query names.
+and local health probes. They do not distinguish traffic by zone. This implementation does not record client addresses or query names.
 `gdnsd_scrape_success` is zero when collection or validation fails. Failed
 scrapes omit native counters rather than reporting false zeros. The exporter
 logs the failure to its journal. Native uptime and counters reset with gdnsd.
@@ -240,9 +233,9 @@ to the Grafana offer. For example, with your controller-qualified test model:
 juju deploy -m "$MODEL" alloy-sub --channel latest/edge --revision 36
 juju integrate -m "$MODEL" gdnsd-vm:juju-info alloy-sub:juju-info
 juju integrate -m "$MODEL" gdnsd-vm:machine-observability alloy-sub:machine-observability
-juju consume -m "$MODEL" hyperborea:zerosoftwere@external/cos.prometheus cos-prometheus
-juju consume -m "$MODEL" hyperborea:zerosoftwere@external/cos.loki cos-loki
-juju consume -m "$MODEL" hyperborea:zerosoftwere@external/cos.grafana cos-grafana
+juju consume -m "$MODEL" CONTROLLER:OWNER/MODEL.prometheus cos-prometheus
+juju consume -m "$MODEL" CONTROLLER:OWNER/MODEL.loki cos-loki
+juju consume -m "$MODEL" CONTROLLER:OWNER/MODEL.grafana cos-grafana
 juju integrate -m "$MODEL" alloy-sub:send-remote-write cos-prometheus:receive-remote-write
 juju integrate -m "$MODEL" alloy-sub:send-loki-logs cos-loki:logging
 juju integrate -m "$MODEL" gdnsd-vm:grafana-dashboard cos-grafana:grafana-dashboard
@@ -270,13 +263,3 @@ To diagnose local collection, run `curl -fsS http://127.0.0.1:9153/metrics` on
 the unit and inspect `journalctl -u gdnsd-exporter.service`. A healthy local
 endpoint does not prove backend delivery. Check recent Prometheus samples and
 Loki entries with the principal's Juju labels before relying on monitoring.
-
-The retained DNS models use the production COS offers in
-`hyperborea:zerosoftwere@external/cos`. Open
-[Grafana](https://cos1-eu.monitoring.dwellir.tech/cos-grafana/) or the
-[gdnsd dashboard](https://cos1-eu.monitoring.dwellir.tech/cos-grafana/d/826f00b525b56478a185aca83b14018968364ae7/gdnsd-native-server-metrics).
-The older `observability-stack` offers belong to the separate test stack and
-are no longer connected to these models. Backend HTTPS access is restricted by
-an AWS allowlist. Keep each source rule labeled with its Juju model, and update
-it if the instance's public address changes. Credentials remain outside this
-repository; obtain them through the Grafana charm action.
