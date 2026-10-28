@@ -102,7 +102,7 @@ fields according to `content-b64-part-count`, then decode the combined base64.
 
 ```bash
 charmcraft pack
-juju deploy ./gdnsd-vm_ubuntu@24.04-amd64.charm \
+juju deploy ./gdnsd-vm_amd64.charm \
   --model CONTROLLER:MODEL --to 0
 juju expose gdnsd-vm --model CONTROLLER:MODEL
 ```

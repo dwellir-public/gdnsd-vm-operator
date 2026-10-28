@@ -3,8 +3,9 @@ summary: Manage a gdnsd authoritative DNS service on a machine.
 description: |
   Install or adopt gdnsd and manage its configuration through explicit actions.
 type: charm
+base: ubuntu@24.04
 platforms:
-  ubuntu@24.04:amd64:
+  amd64:
 parts:
   charm:
     plugin: uv

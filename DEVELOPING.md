@@ -24,7 +24,7 @@ been deployed from the local artifact by this test suite or the recorded manual
 deployment. Deployment is opt-in and refuses an existing application.
 
 ```bash
-CHARM_PATH="$PWD/gdnsd-vm_ubuntu@24.04-amd64.charm" \
+CHARM_PATH="$PWD/gdnsd-vm_amd64.charm" \
 TEST_MODEL=CONTROLLER:MODEL TEST_APPLICATION=gdnsd-vm TEST_MACHINE=0 \
 GDNSD_NONPRODUCTION=1 GDNSD_DEPLOY=1 \
 uv run tox -e integration

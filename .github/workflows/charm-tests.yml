@@ -1,0 +1,22 @@
+name: Charm Tests (no charmcraft)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  charm-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: Run charm tests
+        run: |
+          uv sync --group dev
+          uv run tox -e lint,unit
