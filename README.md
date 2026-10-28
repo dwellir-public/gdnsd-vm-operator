@@ -110,6 +110,47 @@ Do not change its production records, delegation or Aloha configuration.
 Every change to the parent `dwellir.com` zone must use the separate
 [dwellir-dns repository](https://github.com/dwellir-public/dwellir-dns).
 
+## Update the GeoIP database
+
+`sync-geoip` downloads a raw MaxMind City or Country `.mmdb` file to a staging
+directory. It checks the database metadata and sample lookups, then validates
+the candidate with gdnsd. If the data changed, it atomically installs the file
+at `/etc/gdnsd/geoip/GeoLite2-City.mmdb` and runs `gdnsdctl replace` to load it.
+A failed activation restores the previous file and tries to load it again.
+An unchanged database does not replace the daemon.
+
+```bash
+juju run gdnsd-vm/0 sync-geoip --model CONTROLLER:MODEL \
+  url=https://DATABASE-HOST/GeoLite2-City.mmdb
+# Reuse the remembered URL on this unit.
+juju run gdnsd-vm/0 sync-geoip --model CONTROLLER:MODEL
+```
+
+The first call needs `url`. The charm remembers the last nonempty URL supplied
+on each unit, even when the attempt fails. Later calls reuse it unless a new URL
+is supplied. The action displays the URL in its results and records the installed
+file's SHA-256, database type and build timestamp. Stored URLs survive hooks,
+reboots and charm refreshes. Units do not share this setting automatically.
+
+An optional `sha256` parameter verifies a known expected checksum for that call.
+It is not retained for later calls, which allows a stable URL to provide a new
+database revision. Prefer HTTPS endpoints. The download must be a raw `.mmdb`
+file, not an HTML login page or compressed release archive. Downloads are limited
+to 256 MiB. A MaxMind license or a private download endpoint may be needed for
+production databases; the charm does not obtain a license or generate a database.
+
+A failed download, validation or configuration application leaves the unit
+`waiting` with a message to supply a valid version. The failed action and Juju
+logs contain the cause. Status hooks keep checking the running service but retain
+the waiting state until the matching configuration problem is resolved. A real
+service health failure takes priority and reports `blocked`. Correcting another
+zone or restarting the service does not hide an unresolved configuration error.
+
+The database is shared by configured GeoIP resources. The action refuses a
+replacement when a protected zone file is present. For this experiment, use the
+Frankfurt instance for database replacement tests; the existing US/Tokyo n copies
+and their shared database remain unchanged.
+
 ## Local health and workload version
 
 Every `update-status` checks the local systemd state and gdnsd control socket,
@@ -118,7 +159,7 @@ check accepts a normal answer, NXDOMAIN or REFUSED because this server is
 authoritative only. Each DNS transport has a two-second socket timeout.
 
 A healthy unit reports `active` with the message `running`. A stopped service or
-failed check reports `blocked` with its observed state or failure reason. Checks
+failed health check reports `blocked` with its observed state or failure reason. Checks
 do not restart the service. Juju's workload version comes from the running daemon,
 for example `3.8.2`. `get-info` also reports the Ubuntu package version, for example
 `3.8.2-1build2`. An unavailable running version does not erase the last version
@@ -131,7 +172,8 @@ Read and apply configuration through `get-config`, `validate-config` and
 `apply-config`. Each accepts an explicit zone or global scope. The scripts provide
 file handling for these actions. Use `service` with `action=start`, `stop`,
 `restart`, `status`, `enable` or `disable` for the gdnsd systemd unit. `status`
-is observational. `get-info` reports the installed version and service state.
+is observational. `get-info` reports the running and package versions and service state.
+`sync-geoip` manages the GeoIP database using its remembered per-unit URL.
 Configuration backups are local recovery material, not an off-machine backup.
 
 See [architecture](ARCHITECTURE.md), [development](DEVELOPING.md) and the

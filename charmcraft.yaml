@@ -62,3 +62,14 @@ actions:
     required: [action]
   get-info:
     description: Return workload version, service state and managed paths.
+  sync-geoip:
+    description: Fetch and validate a GeoIP database, reusing the last supplied URL when omitted.
+    params:
+      url:
+        type: string
+        default: ''
+        description: Database URL to remember on this unit, replacing the previous URL before fetching.
+      sha256:
+        type: string
+        default: ''
+        description: Optional SHA-256 digest for this invocation only.

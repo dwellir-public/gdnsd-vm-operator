@@ -149,6 +149,22 @@ otherwise report the observed service state or the failed check. Publish the
 running daemon's version in Juju's workload version field. Checks do not restart
 the service or modify configuration. Package version remains a separate diagnostic.
 
+## GeoIP synchronization and configuration failures
+
+The user added sync-geoip during implementation. It accepts a URL on the first
+call and remembers the most recent nonempty URL per unit, before attempting the
+operation. Calls without a URL reuse it and always display the selected URL.
+An optional per-call SHA-256 verifies a known digest. Downloads are raw MaxMind
+City/Country databases, with metadata/sample validation and native gdnsd candidate
+validation before atomic replacement. A changed file triggers gdnsdctl replace;
+a failed activation restores the previous file. A protected zone prevents
+replacement of its shared database. Live database tests use Frankfurt only.
+
+All configuration errors are logged and produce a persistent, scoped waiting
+status asking for a valid configuration version. The health check still runs
+and takes priority for an unhealthy daemon. Successful matching configuration
+validation/application clears that issue, while unrelated actions do not.
+
 ## Before and target compliance matrix
 
 The target directory is empty. Projected PASS means planned, not verified.
@@ -166,6 +182,8 @@ The target directory is empty. Projected PASS means planned, not verified.
 | CONFIG-001, OPS-001/002/003, METADATA-001 | Required-baseline with blockchain applicability | N/A, generic DNS workload | No blockchain contracts; generic package/service helpers still planned | N/A with applicability reason preserved | Generic scope confirmed |
 | OBS-001, skill topology | Required-baseline when publishing telemetry | N/A, no telemetry integration requested | Defer telemetry interface and backend validation | No telemetry compliance claim | Not assessed |
 | CONFIG-002/003, skill blockchain configuration | Recommended-default with blockchain applicability | N/A, generic DNS workload | Adopt only useful digest tracking as a design choice | No blockchain configuration compliance claim | Not executed |
+| GeoIP action and remembered URL | Task-required, added during implementation | GAP, no database action | Add verified atomic replacement, per-unit persisted URL, results, rollback and protected-zone guard | PASS after unit and Frankfurt live checks | Not executed |
+| Configuration diagnostics and waiting status | Task-required, added during implementation | PARTIAL, actions fail and log only | Retain scoped errors in StoredState, log reasons and wait for valid replacement | PASS after event and live rejection/recovery checks | Not executed |
 | Local health and running workload version | Task-required, added during implementation | PARTIAL, systemd observation only | Add local control and UDP/TCP checks on every update-status and publish running version | PASS after event tests and live status checks | Not executed |
 | Module boundaries and operator documentation | Recommended-default, shared | GAP | Testable helper modules and current docs | PASS after lint, tests and link review | Not executed |
 

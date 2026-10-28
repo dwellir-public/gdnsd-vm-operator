@@ -283,6 +283,12 @@ class Workload:
         # APT may have started the default service before this initial config existed.
         self.command(["systemctl", "restart", "gdnsd.service"])
 
+    def sync_geoip(self, url: str, sha256: str = "") -> dict:
+        """Download and validate a database using the shared transaction lock."""
+        from geoip import sync_database
+
+        return sync_database(self, url, sha256)
+
     def health(self) -> dict:
         """Observe systemd, the running version and local DNS without mutation."""
         version = ""

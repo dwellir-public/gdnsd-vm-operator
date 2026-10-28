@@ -1,7 +1,8 @@
 # Architecture
 
 `src/charm.py` handles Juju events and status. `src/workload.py` owns package
-adoption, native command execution and configuration transactions. The scripts
+adoption, native command execution and configuration transactions. `src/geoip.py` handles bounded database downloads, MaxMind validation and
+transactional database replacement. The scripts
 in `scripts/` call actions through Juju and keep pull-time conflict metadata.
 
 ## Install and refresh
@@ -55,7 +56,11 @@ The charm opens UDP and TCP port 53. Juju exposure and parent delegation are
 separate operator steps. Local `gdnsdctl` calls use its Unix socket. No TCP
 management listener or external HTTP API is added. No telemetry integrations,
 blockchain interfaces, storage declarations or automatic zone replication are
-provided. GeoIP data and mock-health endpoints remain externally managed.
+provided. GeoIP updates use the explicit sync-geoip action; mock-health endpoints remain
+externally managed. The per-unit StoredState retains the URL and scoped
+configuration errors across hooks and refreshes. Failed configuration requests
+produce waiting status until a matching valid candidate resolves the problem.
+Healthy status observations do not clear that record.
 
 For this experiment, n is protected, x is writable, and parent dwellir.com
 changes must use the DNSControl repository. A fresh Frankfurt instance receives

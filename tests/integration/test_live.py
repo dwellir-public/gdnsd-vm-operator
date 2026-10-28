@@ -202,3 +202,51 @@ def test_health_reports_stopped_and_recovers_only_on_fresh_model(target):
     finally:
         action(juju, app, "service", {"action": "start"})
     assert action(juju, app, "get-info", {})["state"] == "running"
+
+
+def test_geoip_sync_remembers_url_and_preserves_valid_data_on_failure(target):
+    """Exercise URL reuse, database activation and waiting/recovery on Frankfurt only."""
+    if os.environ.get("GDNSD_TEST_GEOIP") != "1":
+        pytest.skip("GeoIP replacement requires GDNSD_TEST_GEOIP=1 on the fresh model")
+    juju, app, artifact = target
+    assert protected_hash(juju, app).strip() == "absent"
+    import json
+
+    provenance = json.loads((Path(__file__).parents[1] / "data/provenance.json").read_text())
+    url = provenance["url"]
+    expected = provenance["sha256"]
+    database = "/etc/gdnsd/geoip/GeoLite2-City.mmdb"
+    before_pid = juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID")
+    result = action(juju, app, "sync-geoip", {"url": url, "sha256": expected})
+    assert result["url"] == url and result["sha256"] == expected
+    assert result["database-type"] == "GeoIP2-City"
+    after_pid = juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID")
+    if result["changed"]:
+        assert after_pid != before_pid
+    assert juju.ssh(f"{app}/0", f"sudo sha256sum {database}").split()[0] == expected
+    reused = action(juju, app, "sync-geoip", {})
+    assert reused["url"] == url and not reused["changed"]
+    assert juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID") == after_pid
+    bad_url = url.rsplit("/test-data/", 1)[0] + "/README.md"
+    with pytest.raises(jubilant.TaskError) as failure:
+        action(juju, app, "sync-geoip", {"url": bad_url})
+    assert failure.value.task.results["url"] == bad_url
+    assert "MaxMind" in failure.value.task.message
+    waiting = juju.status().apps[app].units[f"{app}/0"].workload_status
+    assert waiting.current == "waiting" and "valid GeoIP" in waiting.message
+    assert juju.ssh(f"{app}/0", f"sudo sha256sum {database}").split()[0] == expected
+    # The invalid supplied URL replaced the prior setting, so an omitted URL retries it.
+    with pytest.raises(jubilant.TaskError) as failure:
+        action(juju, app, "sync-geoip", {})
+    assert failure.value.task.results["url"] == bad_url
+    logs = juju.ssh(f"{app}/0", "sudo tail -n 300 /var/log/juju/unit-gdnsd-vm-0.log")
+    assert "MaxMind database validation failed" in logs
+    fixed = action(juju, app, "sync-geoip", {"url": url})
+    assert not fixed["changed"]
+    assert juju.status().apps[app].units[f"{app}/0"].workload_status.current == "active"
+    juju.refresh(app, path=artifact)
+    juju.wait(
+        lambda s: jubilant.all_active(s, app) and jubilant.all_agents_idle(s, app), timeout=600
+    )
+    assert action(juju, app, "sync-geoip", {})["url"] == url
+    assert protected_hash(juju, app).strip() == "absent"
