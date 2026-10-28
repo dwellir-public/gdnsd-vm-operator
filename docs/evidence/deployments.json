@@ -7,8 +7,25 @@
     "public_ip": "44.201.71.32",
     "version": "3.8.2",
     "status": "active",
-    "message": "running",
-    "local_revision": 5
+    "message": "running; GeoIP installed: GeoLite2-City 2025-05-23T11:21:08Z",
+    "local_revision": 6,
+    "info": {
+      "active": "True",
+      "geoip-build-epoch": "1747999268",
+      "geoip-build-time": "2025-05-23T11:21:08Z",
+      "geoip-database-path": "/etc/gdnsd/geoip/GeoLite2-City.mmdb",
+      "geoip-database-type": "GeoLite2-City",
+      "geoip-sha256": "bc6e2e504b3a59164dae621e3c4d1f807809f820ab986508b210107b45eb407c",
+      "geoip-state": "installed",
+      "geoip-summary": "GeoIP installed: GeoLite2-City 2025-05-23T11:21:08Z",
+      "geoip-version-source": "installed-file-metadata",
+      "message": "running; GeoIP installed: GeoLite2-City 2025-05-23T11:21:08Z",
+      "package-version": "3.8.2-1build2",
+      "return-code": 0,
+      "service-name": "gdnsd.service",
+      "state": "running",
+      "workload-version": "3.8.2"
+    }
   },
   {
     "model": "hyperborea:erik-lonroth@external/gdnsd-ap",
@@ -18,8 +35,25 @@
     "public_ip": "18.181.231.202",
     "version": "3.8.2",
     "status": "active",
-    "message": "running",
-    "local_revision": 5
+    "message": "running; GeoIP installed: GeoLite2-City 2025-05-23T11:21:08Z",
+    "local_revision": 6,
+    "info": {
+      "active": "True",
+      "geoip-build-epoch": "1747999268",
+      "geoip-build-time": "2025-05-23T11:21:08Z",
+      "geoip-database-path": "/etc/gdnsd/geoip/GeoLite2-City.mmdb",
+      "geoip-database-type": "GeoLite2-City",
+      "geoip-sha256": "bc6e2e504b3a59164dae621e3c4d1f807809f820ab986508b210107b45eb407c",
+      "geoip-state": "installed",
+      "geoip-summary": "GeoIP installed: GeoLite2-City 2025-05-23T11:21:08Z",
+      "geoip-version-source": "installed-file-metadata",
+      "message": "running; GeoIP installed: GeoLite2-City 2025-05-23T11:21:08Z",
+      "package-version": "3.8.2-1build2",
+      "return-code": 0,
+      "service-name": "gdnsd.service",
+      "state": "running",
+      "workload-version": "3.8.2"
+    }
   },
   {
     "model": "hyperborea:erik-lonroth@external/gdnsd-nl",
@@ -29,7 +63,24 @@
     "public_ip": "63.184.230.135",
     "version": "3.8.2",
     "status": "active",
-    "message": "running",
-    "local_revision": 6
+    "message": "running; GeoIP installed: GeoIP2-City 2026-10-22T18:52:57Z",
+    "local_revision": 8,
+    "info": {
+      "active": "True",
+      "geoip-build-epoch": "1792695177",
+      "geoip-build-time": "2026-10-22T18:52:57Z",
+      "geoip-database-path": "/etc/gdnsd/geoip/GeoLite2-City.mmdb",
+      "geoip-database-type": "GeoIP2-City",
+      "geoip-sha256": "1394af009121820d43b620fea19fc4b6f09141698091c00f70f225a982389035",
+      "geoip-state": "installed",
+      "geoip-summary": "GeoIP installed: GeoIP2-City 2026-10-22T18:52:57Z",
+      "geoip-version-source": "installed-file-metadata",
+      "message": "running; GeoIP installed: GeoIP2-City 2026-10-22T18:52:57Z",
+      "package-version": "3.8.2-1build2",
+      "return-code": 0,
+      "service-name": "gdnsd.service",
+      "state": "running",
+      "workload-version": "3.8.2"
+    }
   }
 ]

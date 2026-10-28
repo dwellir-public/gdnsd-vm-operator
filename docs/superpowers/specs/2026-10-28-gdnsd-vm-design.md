@@ -176,26 +176,27 @@ installed-file-metadata. Do not claim gdnsd exposes a loaded database version.
 
 ## Before and target compliance matrix
 
-The target directory is empty. Projected PASS means planned, not verified.
+The before column records the initially empty target directory. Target results
+were forecasts. The actual column now links to completed validation and limits.
 
 | Requirement and source | Authority and applicability | Before | Disposition | Target | Actual evidence |
 | --- | --- | --- | --- | --- | --- |
-| BUILD-001, skill generic standards | Required-baseline, shared | GAP, no charm | Implement consolidated definitions, uv lock and dependencies | PASS after pack and dependency checks | Not executed |
-| UPGRADE-001, skill Juju concepts | Required-baseline, shared | GAP, no charm | Preserve installed version and running process during charm refresh | PASS after PID/config preservation checks | Not executed |
-| DEPLOY-001, skill generic testing | Required-baseline, shared | GAP, no charm | Built artifact plus pytest/Jubilant behavior checks | PASS for tested Ubuntu 24.04 amd64 only | Not executed |
-| Generic workload, requested name and repository | Task-required, this charm | GAP | Create independent repository and gdnsd-vm charm | PASS after metadata and Git checks | Not executed |
-| Prebuilt repository installation only | Task-required, latest user instruction | Existing apt package verified | Install only if absent; preserve existing package and holds; no source path | PASS after package/source tests | Installed and candidate 3.8.2-1build2 verified on both existing VMs |
-| Per-zone push/pull, validation, rollback | Task-required, this charm | GAP | Implement actions and Juju-based scripts | PASS after invalid-update and isolation checks | Not executed |
-| Protect n and preserve x TTL 60 | Task-required, all deployment steps | Existing experiment | Preserve and compare hashes/wire answers | PASS after deployment evidence | No deployment yet |
-| Three regional deployments | Task-required, retained test models | US and Tokyo machine-only | Adopt both and add Frankfurt gdnsd-nl | PASS after live checks | Not executed |
+| BUILD-001, skill generic standards | Required-baseline, shared | GAP, no charm | Implement consolidated definitions, uv lock and dependencies | PASS after pack and dependency checks | PASS: locked dependencies, uv packaging and local artifact build; [evidence](../../validation.md#artifact-and-dependencies). |
+| UPGRADE-001, skill Juju concepts | Required-baseline, shared | GAP, no charm | Preserve installed version and running process during charm refresh | PASS after PID/config preservation checks | PASS: refresh preserved PID/config/package on all three units; [live results](../../validation.md#checks-and-outcomes). |
+| DEPLOY-001, skill generic testing | Required-baseline, shared | GAP, no charm | Built artifact plus pytest/Jubilant behavior checks | PASS for tested Ubuntu 24.04 amd64 only | PASS: local artifact, pytest/Jubilant behavior checks on Ubuntu 24.04 amd64 in all three retained models. |
+| Generic workload, requested name and repository | Task-required, this charm | GAP | Create independent repository and gdnsd-vm charm | PASS after metadata and Git checks | PASS: independent local Git repository, gdnsd-vm metadata and three live deployments. |
+| Prebuilt repository installation only | Task-required, latest user instruction | Existing apt package verified | Install only if absent; preserve existing package and holds; no source path | PASS after package/source tests | PASS: Ubuntu gdnsd 3.8.2-1build2 on all units; no source build or workload upgrade feature. Corrected initial US adoption restart documented. |
+| Per-zone push/pull, validation, rollback | Task-required, this charm | GAP | Implement actions and Juju-based scripts | PASS after invalid-update and isolation checks | PASS: unit tests plus live zone/CLI/conflict/invalid-input checks; rollback failure paths unit-tested. |
+| Protect n and preserve x TTL 60 | Task-required, all deployment steps | Existing experiment | Preserve and compare hashes/wire answers | PASS after deployment evidence | PASS: US/Tokyo n/global/GeoIP hashes preserved, parent unchanged, wire TTL 60; [protection evidence](../../validation.md#protection-and-corrected-first-adoption-failure). |
+| Three regional deployments | Task-required, retained test models | US and Tokyo machine-only | Adopt both and add Frankfurt gdnsd-nl | PASS after live checks | PASS: US, Tokyo and Frankfurt machine 0, active with workload version 3.8.2. |
 | CONFIG-001, OPS-001/002/003, METADATA-001 | Required-baseline with blockchain applicability | N/A, generic DNS workload | No blockchain contracts; generic package/service helpers still planned | N/A with applicability reason preserved | Generic scope confirmed |
 | OBS-001, skill topology | Required-baseline when publishing telemetry | N/A, no telemetry integration requested | Defer telemetry interface and backend validation | No telemetry compliance claim | Not assessed |
 | CONFIG-002/003, skill blockchain configuration | Recommended-default with blockchain applicability | N/A, generic DNS workload | Adopt only useful digest tracking as a design choice | No blockchain configuration compliance claim | Not executed |
-| Installed GeoIP version visibility | Task-required, added during implementation | GAP, no installed metadata in status | Read metadata on each status observation and expose type, UTC build timestamp and diagnostic checksum | PASS after unit and three-model live checks | Not executed |
-| GeoIP action and remembered URL | Task-required, added during implementation | GAP, no database action | Add verified atomic replacement, per-unit persisted URL, results, rollback and protected-zone guard | PASS after unit and Frankfurt live checks | Not executed |
-| Configuration diagnostics and waiting status | Task-required, added during implementation | PARTIAL, actions fail and log only | Retain scoped errors in StoredState, log reasons and wait for valid replacement | PASS after event and live rejection/recovery checks | Not executed |
-| Local health and running workload version | Task-required, added during implementation | PARTIAL, systemd observation only | Add local control and UDP/TCP checks on every update-status and publish running version | PASS after event tests and live status checks | Not executed |
-| Module boundaries and operator documentation | Recommended-default, shared | GAP | Testable helper modules and current docs | PASS after lint, tests and link review | Not executed |
+| Installed GeoIP version visibility | Task-required, added during implementation | GAP, no installed metadata in status | Read metadata on each status observation and expose type, UTC build timestamp and diagnostic checksum | PASS after unit and three-model live checks | PASS: 138 unit tests, live installed type/build-time status and get-info/hash checks on all three units. |
+| GeoIP action and remembered URL | Task-required, added during implementation | GAP, no database action | Add verified atomic replacement, per-unit persisted URL, results, rollback and protected-zone guard | PASS after unit and Frankfurt live checks | PASS: real Frankfurt download/activation/reuse/failure/preservation/recovery/refresh checks; protected US/Tokyo databases unchanged. |
+| Configuration diagnostics and waiting status | Task-required, added during implementation | PARTIAL, actions fail and log only | Retain scoped errors in StoredState, log reasons and wait for valid replacement | PASS after event and live rejection/recovery checks | PASS: scoped state/event tests and live GeoIP invalid-download waiting/logging/recovery checks. |
+| Local health and running workload version | Task-required, added during implementation | PARTIAL, systemd observation only | Add local control and UDP/TCP checks on every update-status and publish running version | PASS after event tests and live status checks | PASS: repeated event checks and local UDP/TCP/control health, stopped-service recovery and version publication live-tested. |
+| Module boundaries and operator documentation | Recommended-default, shared | GAP | Testable helper modules and current docs | PASS after lint, tests and link review | PASS: orchestration/workload/GeoIP/CLI modules, lint, unit tests, README/architecture/development/validation docs. |
 
 ## Design choices and sources
 
@@ -212,4 +213,5 @@ explicit prohibition and is excluded.
 - [gdnsd 3.8.2 control protocol](https://github.com/gdnsd/gdnsd/blob/v3.8.2/docs/ControlSocket.md)
 - [DNSControl BIND provider](https://docs.dnscontrol.org/provider/bind)
 
-Implementation and deployment evidence is recorded separately in the implementation plan and validation report.
+Implementation and deployment evidence is recorded in the implementation plan
+and [validation report](../../validation.md).

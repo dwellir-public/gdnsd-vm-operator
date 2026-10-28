@@ -1,5 +1,8 @@
 872d188294e33f95f6a906be1dfeada4854e961cac3ca00a62dedbf823042822  /etc/gdnsd/config
 1280bcbf115c61f9350cae8cc6623aa41071d8fbb87fcb17a6ad5255bfc6b732  /etc/gdnsd/zones/x.dwellir.com
 1394af009121820d43b620fea19fc4b6f09141698091c00f70f225a982389035  /etc/gdnsd/geoip/GeoLite2-City.mmdb
-MainPID=23020
+MainPID=24702
 gdnsd	3.8.2-1build2
+d7bd875bb445bc7cda76ab14caf8a09473984edc1f7b02cfde22261f3d59d642  /var/lib/juju/agents/unit-gdnsd-vm-0/charm/src/charm.py
+349330dcdfc6b02f0f16cbc4ac635ab4df5aef38e0cd4bd8a32124a3a5797b36  /var/lib/juju/agents/unit-gdnsd-vm-0/charm/src/workload.py
+2f30ef25258301336de12601d2adb4752bb4e449dfe2809802aec704dd54c779  /var/lib/juju/agents/unit-gdnsd-vm-0/charm/src/geoip.py
