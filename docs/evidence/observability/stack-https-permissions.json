@@ -1,0 +1,25 @@
+[
+  {
+    "IpProtocol": "tcp",
+    "FromPort": 443,
+    "ToPort": 443,
+    "IpRanges": [
+      {
+        "CidrIp": "44.201.71.32/32",
+        "Description": "hyperborea:erik-lonroth@external/gdnsd-us - observability HTTPS"
+      },
+      {
+        "CidrIp": "18.181.231.202/32",
+        "Description": "hyperborea:erik-lonroth@external/gdnsd-ap - observability HTTPS"
+      },
+      {
+        "CidrIp": "63.184.230.135/32",
+        "Description": "hyperborea:erik-lonroth@external/gdnsd-nl - observability HTTPS"
+      },
+      {
+        "CidrIp": "44.243.1.147/32",
+        "Description": "hyperborea:erik-lonroth@external/gdnsd-us-west - observability HTTPS"
+      }
+    ]
+  }
+]

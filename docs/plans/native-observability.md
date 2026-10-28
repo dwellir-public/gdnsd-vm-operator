@@ -10,13 +10,13 @@ Production n changes and a production canary are recommendations only.
 | --- | --- | --- | --- | --- |
 | Usage counters | Task-required | Native gdnsdctl stats only | Local Prometheus endpoint for query rate, responses/errors, uptime and transport counters | Implemented; live local counters verified on all four servers |
 | Native scope | Task-required | Counters are server-wide | Clearly identify totals across n/x/probes; no per-zone/client labels | Documented server-wide scope; no zone or client labels |
-| Source identity | Required-baseline OBS-001 | No telemetry relation | Runtime model/UUID/app/unit/charm preserved to backend | Validated principal labels in all four rendered Alloy configs; backend samples pending |
+| Source identity | Required-baseline OBS-001 | No telemetry relation | Runtime model/UUID/app/unit/charm preserved to backend | Principal labels verified in rendered configs and fresh backend samples for all four models |
 | Collector contract | Contract-required | No endpoint | Vendored authoritative v3 library and compatible alloy-sub | Reference bytes preserved; Charmhub alloy-sub revision 36 uses identical v3 library |
-| Metrics/log pipeline | Task-required | No collector in DNS models | Co-located alloy-sub to selected Prometheus/Loki offers | All four collectors active and related; backend connectivity blocks delivery validation |
+| Metrics/log pipeline | Task-required | No collector in DNS models | Co-located alloy-sub to selected Prometheus/Loki offers | All four collectors active; fresh Prometheus metrics and Loki logs verified after AWS firewall correction |
 | Dashboard | Task-required monitor view | None | Basic query/error/uptime panels and service journal, model/unit filters | Dashboard published through relations; browser and data validation pending backend recovery |
 | Refresh preservation | Repository-required | DNS PID/files recorded | Auxiliary exporter only; preserve gdnsd PID, package, config and n/x data | All four before/after snapshots identical for DNS PID, package, config, zones and GeoIP |
 | Alerts | Recommended-default disposition | No approved thresholds | Explicit empty artifacts list; no alert rules | Explicit empty artifacts list; no alerts configured |
-| Live validation | Required-baseline DEPLOY-001 | Unit/live baseline reports exist | New unit tests, local artifact, Jubilant checks, fresh backend data and dashboard browser | 172 unit tests on Python 3.12/3.13 and eight retained-model checks passed; backend/browser pending |
+| Live validation | Required-baseline DEPLOY-001 | Unit/live baseline reports exist | New unit tests, local artifact, Jubilant checks, fresh backend data and dashboard browser | 172 unit tests on Python 3.12/3.13, eight retained-model checks and backend metrics/log verification passed; browser pending |
 
 ## Design and implementation plan
 
@@ -63,3 +63,9 @@ could not reach its Kubernetes API. Continuing the auxiliary local rollout
 allowed validation without changing DNS routing or touching production n.
 No backend configuration or firewall changes were attempted. See the
 [validation report](../validation-observability.md) for evidence and pending checks.
+
+Follow-up: the user identified the AWS allowlist requirement. Four TCP 443 /32
+rules with controller-qualified source model descriptions restored connectivity.
+Fresh metrics and journal markers were verified for all four models. Grafana
+browser checks remain pending because the credential action timed out. The
+validation report records rule IDs, sources, evidence and rollback scope.

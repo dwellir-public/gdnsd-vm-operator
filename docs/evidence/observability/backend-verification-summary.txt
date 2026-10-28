@@ -1,0 +1,24 @@
+metrics 4 series/streams
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-ap', 'juju_model_uuid': '529c3451-b022-4b90-8d7a-9eb3b76348b8', 'juju_unit': 'gdnsd-vm/0'} 1
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us-west', 'juju_model_uuid': 'af1deba3-b2b4-4df8-8625-e220af299d52', 'juju_unit': 'gdnsd-vm/0'} 1
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us', 'juju_model_uuid': 'c13dc243-1594-4c7e-889f-557534d77b95', 'juju_unit': 'gdnsd-vm/0'} 1
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-nl', 'juju_model_uuid': '57d78cb4-644b-41ea-8969-ecd623197f78', 'juju_unit': 'gdnsd-vm/0'} 1
+sample-age 4 series/streams
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-ap', 'juju_model_uuid': '529c3451-b022-4b90-8d7a-9eb3b76348b8', 'juju_unit': 'gdnsd-vm/0'} 0.8250000476837158
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us-west', 'juju_model_uuid': 'af1deba3-b2b4-4df8-8625-e220af299d52', 'juju_unit': 'gdnsd-vm/0'} 2.569999933242798
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us', 'juju_model_uuid': 'c13dc243-1594-4c7e-889f-557534d77b95', 'juju_unit': 'gdnsd-vm/0'} 0.8929998874664307
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-nl', 'juju_model_uuid': '57d78cb4-644b-41ea-8969-ecd623197f78', 'juju_unit': 'gdnsd-vm/0'} 15.402999877929688
+requests 8 series/streams
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-ap', 'juju_model_uuid': '529c3451-b022-4b90-8d7a-9eb3b76348b8', 'juju_unit': 'gdnsd-vm/0'} 26309
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-ap', 'juju_model_uuid': '529c3451-b022-4b90-8d7a-9eb3b76348b8', 'juju_unit': 'gdnsd-vm/0'} 2095
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us-west', 'juju_model_uuid': 'af1deba3-b2b4-4df8-8625-e220af299d52', 'juju_unit': 'gdnsd-vm/0'} 11252
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us-west', 'juju_model_uuid': 'af1deba3-b2b4-4df8-8625-e220af299d52', 'juju_unit': 'gdnsd-vm/0'} 1667
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us', 'juju_model_uuid': 'c13dc243-1594-4c7e-889f-557534d77b95', 'juju_unit': 'gdnsd-vm/0'} 17485
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us', 'juju_model_uuid': 'c13dc243-1594-4c7e-889f-557534d77b95', 'juju_unit': 'gdnsd-vm/0'} 2562
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-nl', 'juju_model_uuid': '57d78cb4-644b-41ea-8969-ecd623197f78', 'juju_unit': 'gdnsd-vm/0'} 14010
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-nl', 'juju_model_uuid': '57d78cb4-644b-41ea-8969-ecd623197f78', 'juju_unit': 'gdnsd-vm/0'} 2964
+logs 4 series/streams
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-ap', 'juju_model_uuid': '529c3451-b022-4b90-8d7a-9eb3b76348b8', 'juju_unit': 'gdnsd-vm/0'} None
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-nl', 'juju_model_uuid': '57d78cb4-644b-41ea-8969-ecd623197f78', 'juju_unit': 'gdnsd-vm/0'} None
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us', 'juju_model_uuid': 'c13dc243-1594-4c7e-889f-557534d77b95', 'juju_unit': 'gdnsd-vm/0'} None
+{'juju_application': 'gdnsd-vm', 'juju_charm': 'gdnsd-vm', 'juju_model': 'gdnsd-us-west', 'juju_model_uuid': 'af1deba3-b2b4-4df8-8625-e220af299d52', 'juju_unit': 'gdnsd-vm/0'} None
