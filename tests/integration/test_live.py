@@ -98,6 +98,21 @@ def test_zone_roundtrip_validation_and_conflicts(target):
     assert "192.0.2.201" in juju.ssh(
         f"{app}/0", "dig @127.0.0.1 charm-check.x.dwellir.com A +short"
     )
+    # Recover the persisted validation warning using the known-good live zone.
+    # Later retained-model tests require a healthy application at their entry.
+    repaired = action(
+        juju,
+        app,
+        "validate-config",
+        {
+            "scope": "zone",
+            "zone": "x.dwellir.com",
+            "expected-sha256": current["sha256"],
+            "content-b64": current["content-b64"],
+        },
+    )
+    assert repaired["validated"] and not repaired["changed"]
+    juju.wait(lambda state: jubilant.all_active(state, app), timeout=60)
 
 
 def test_script_pull_validate_push(target, tmp_path):
