@@ -1,0 +1,11 @@
+{
+  "source_commit": "4027def5ef6051af054fa02634ee72a858dbbe55",
+  "artifact": "gdnsd-vm_ubuntu@24.04-amd64.charm",
+  "sha256": "6b4343a88a7c059b26873d0b2835a711ee214e5ce1dd9c7d3a7748e67704faff",
+  "base": "ubuntu@24.04",
+  "architecture": "amd64",
+  "installation_source": "Ubuntu prebuilt APT package",
+  "geoip_source": "operator-provided Nextcloud share; URL retained in unit runtime state",
+  "download_sha256": "8dd3673002aeecb01221008c0cb6cb10cef4d40586cf50069741fb986ecf8cb7",
+  "database_sha256": "aea6c345eb914bc137252fb720aacbd518e3991a869143f9743ce827d00751f2"
+}

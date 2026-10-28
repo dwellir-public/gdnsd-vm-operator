@@ -193,7 +193,8 @@ is observational. `get-info` reports the running and package versions and servic
 `sync-geoip` manages the GeoIP database using its remembered per-unit URL.
 Configuration backups are local recovery material, not an off-machine backup.
 
-See [architecture](ARCHITECTURE.md), [development](DEVELOPING.md) and the
+See the latest [compressed GeoIP upgrade validation](docs/validation-compressed-geoip.md),
+[architecture](ARCHITECTURE.md), [development](DEVELOPING.md) and the
 [approved design](docs/superpowers/specs/2026-10-28-gdnsd-vm-design.md).
 
 ## References
