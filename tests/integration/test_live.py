@@ -184,7 +184,15 @@ def test_local_health_and_running_workload_version(target):
     assert info["package-version"]
     status = juju.status()
     assert status.apps[app].version == info["workload-version"]
-    assert status.apps[app].units[f"{app}/0"].workload_status.message == "running"
+    assert info["geoip-state"] in {"installed", "absent"}
+    assert info["geoip-version-source"] == "installed-file-metadata"
+    if info["geoip-state"] == "installed":
+        assert info["geoip-build-time"].endswith("Z")
+        assert info["geoip-sha256"]
+        assert (
+            info["geoip-build-time"] in status.apps[app].units[f"{app}/0"].workload_status.message
+        )
+    assert status.apps[app].units[f"{app}/0"].workload_status.message.startswith("running;")
 
 
 def test_health_reports_stopped_and_recovers_only_on_fresh_model(target):
@@ -198,7 +206,12 @@ def test_health_reports_stopped_and_recovers_only_on_fresh_model(target):
         assert not result["active"]
         info = action(juju, app, "get-info", {})
         assert not info["active"] and info["state"] == "inactive"
-        assert juju.status().apps[app].units[f"{app}/0"].workload_status.message == "inactive"
+        assert (
+            juju.status()
+            .apps[app]
+            .units[f"{app}/0"]
+            .workload_status.message.startswith("inactive;")
+        )
     finally:
         action(juju, app, "service", {"action": "start"})
     assert action(juju, app, "get-info", {})["state"] == "running"

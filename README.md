@@ -158,11 +158,21 @@ then sends a root SOA query over both UDP and TCP to `127.0.0.1:53`. The DNS
 check accepts a normal answer, NXDOMAIN or REFUSED because this server is
 authoritative only. Each DNS transport has a two-second socket timeout.
 
-A healthy unit reports `active` with the message `running`. A stopped service or
+A healthy unit reports `active` with a message such as
+`running; GeoIP installed: GeoLite2-City 2025-05-23T11:21:08Z`.
+MaxMind identifies database builds by their type and UTC build timestamp.
+This describes the installed file. gdnsd does not expose a separate loaded-database
+version through its control API. A successful sync validates and reloads that file.
+A fresh unit without a database reports `GeoIP not installed`. Invalid installed
+metadata produces a diagnostic log and waiting status requesting a valid file. A stopped service or
 failed health check reports `blocked` with its observed state or failure reason. Checks
 do not restart the service. Juju's workload version comes from the running daemon,
 for example `3.8.2`. `get-info` also reports the Ubuntu package version, for example
-`3.8.2-1build2`. An unavailable running version does not erase the last version
+`3.8.2-1build2`. It also returns `geoip-database-type`, `geoip-build-time`,
+`geoip-build-epoch`, `geoip-database-path`, `geoip-sha256` and
+`geoip-version-source=installed-file-metadata`. Status inspection reads metadata;
+the full file hash is calculated for `get-info` rather than on every status hook.
+An unavailable running version does not erase the last version
 Juju observed. Install, refresh and successful service/configuration actions
 also refresh the local health status.
 

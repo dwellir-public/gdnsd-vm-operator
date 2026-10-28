@@ -1,0 +1,35 @@
+[
+  {
+    "model": "hyperborea:erik-lonroth@external/gdnsd-us",
+    "region": "us-east-1",
+    "unit": "gdnsd-vm/0",
+    "machine": "0",
+    "public_ip": "44.201.71.32",
+    "version": "3.8.2",
+    "status": "active",
+    "message": "running",
+    "local_revision": 5
+  },
+  {
+    "model": "hyperborea:erik-lonroth@external/gdnsd-ap",
+    "region": "ap-northeast-1",
+    "unit": "gdnsd-vm/0",
+    "machine": "0",
+    "public_ip": "18.181.231.202",
+    "version": "3.8.2",
+    "status": "active",
+    "message": "running",
+    "local_revision": 5
+  },
+  {
+    "model": "hyperborea:erik-lonroth@external/gdnsd-nl",
+    "region": "eu-central-1",
+    "unit": "gdnsd-vm/0",
+    "machine": "0",
+    "public_ip": "63.184.230.135",
+    "version": "3.8.2",
+    "status": "active",
+    "message": "running",
+    "local_revision": 6
+  }
+]

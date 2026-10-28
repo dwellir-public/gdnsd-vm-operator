@@ -1,0 +1,10 @@
+{
+  "source_commit": "9afb81c78f8209361acbd8c840caa306a5587362",
+  "artifact": "gdnsd-vm_ubuntu@24.04-amd64.charm",
+  "sha256": "db28a46135339a44827d4b59df19f3cf45677bb054c88c3a50e7263ea93b7473",
+  "base": "ubuntu@24.04",
+  "architecture": "amd64",
+  "publication": "local only",
+  "workload_version": "3.8.2",
+  "package_version": "3.8.2-1build2"
+}

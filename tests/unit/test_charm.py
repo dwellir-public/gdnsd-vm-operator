@@ -549,3 +549,101 @@ def test_geoip_waiting_message_identifies_recovery_action(ctx, workload):
     assert failure.value.state.unit_status.message == (
         "Supply a valid GeoIP database via sync-geoip; see action logs"
     )
+
+
+GEOIP_SUMMARY = "GeoIP installed: GeoLite2-City 2025-05-23T11:21:08Z"
+
+
+def test_healthy_status_shows_installed_geoip_type_and_build_time(ctx, workload):
+    _, host = workload
+    host.health.return_value |= {
+        "message": f"running; {GEOIP_SUMMARY}",
+        "geoip-summary": GEOIP_SUMMARY,
+    }
+    state = ctx.run(ctx.on.update_status(), State())
+    assert state.unit_status == ops.ActiveStatus(f"running; {GEOIP_SUMMARY}")
+    assert state.workload_version == "3.8.2"
+    state = ctx.run(ctx.on.upgrade_charm(), state)
+    assert state.unit_status.message.count(GEOIP_SUMMARY) == 1
+    host.service.assert_not_called()
+    host.install.assert_not_called()
+
+
+def test_pending_configuration_waiting_retains_installed_geoip_details(ctx, workload):
+    _, host = workload
+    host.health.return_value |= {"geoip-summary": GEOIP_SUMMARY}
+    state = failed_zone_state(ctx, workload)
+    state = ctx.run(ctx.on.update_status(), state)
+    assert isinstance(state.unit_status, ops.WaitingStatus)
+    assert "zone:example.org" in state.unit_status.message
+    assert GEOIP_SUMMARY in state.unit_status.message
+    assert state.workload_version == "3.8.2"
+
+
+@pytest.mark.parametrize("included", [False, True])
+def test_blocked_health_retains_geoip_summary_without_duplicate(ctx, workload, included):
+    _, host = workload
+    host.health.return_value |= {
+        "healthy": False,
+        "geoip-summary": GEOIP_SUMMARY,
+        "message": "TCP DNS probe failed" + (f"; {GEOIP_SUMMARY}" if included else ""),
+    }
+    state = ctx.run(ctx.on.update_status(), State())
+    assert isinstance(state.unit_status, ops.BlockedStatus)
+    assert "TCP DNS probe failed" in state.unit_status.message
+    assert state.unit_status.message.count(GEOIP_SUMMARY) == 1
+
+
+def test_geoip_inspection_error_waits_logs_and_recovers_when_metadata_is_valid(ctx, workload):
+    _, host = workload
+    host.health.return_value |= {
+        "geoip-summary": "GeoIP invalid: unreadable metadata",
+        "geoip-error": "bad MMDB metadata",
+    }
+    state = ctx.run(ctx.on.update_status(), State())
+    assert isinstance(state.unit_status, ops.WaitingStatus)
+    assert "valid GeoIP database" in state.unit_status.message
+    assert "GeoIP invalid: unreadable metadata" in state.unit_status.message
+    assert any("bad MMDB metadata" in entry.message for entry in ctx.juju_log)
+    state = ctx.run(ctx.on.upgrade_charm(), state)
+    assert isinstance(state.unit_status, ops.WaitingStatus)
+    host.service.assert_not_called()
+    host.install.assert_not_called()
+    del host.health.return_value["geoip-error"]
+    host.health.return_value |= {
+        "geoip-summary": GEOIP_SUMMARY,
+        "message": f"running; {GEOIP_SUMMARY}",
+    }
+    state = ctx.run(ctx.on.update_status(), state)
+    assert state.unit_status == ops.ActiveStatus(f"running; {GEOIP_SUMMARY}")
+
+
+def test_successful_metadata_inspection_does_not_clear_failed_geoip_sync(ctx, workload):
+    _, host = workload
+    host.sync_geoip.side_effect = ValueError("candidate download failed")
+    host.health.return_value |= {
+        "geoip-summary": "GeoIP invalid: unreadable metadata",
+        "geoip-error": "bad MMDB metadata",
+    }
+    with pytest.raises(ops.testing.ActionFailed) as failure:
+        ctx.run(ctx.on.action("sync-geoip", params={"url": "https://example.org/city"}), State())
+    state = failure.value.state
+    del host.health.return_value["geoip-error"]
+    host.health.return_value |= {
+        "geoip-summary": GEOIP_SUMMARY,
+        "message": f"running; {GEOIP_SUMMARY}",
+    }
+    state = ctx.run(ctx.on.update_status(), state)
+    assert isinstance(state.unit_status, ops.WaitingStatus)
+    assert "valid GeoIP database" in state.unit_status.message
+    assert GEOIP_SUMMARY in state.unit_status.message
+
+
+def test_fresh_node_without_database_can_be_healthy(ctx, workload):
+    _, host = workload
+    host.health.return_value |= {
+        "geoip-summary": "GeoIP not installed",
+        "message": "running; GeoIP not installed",
+    }
+    state = ctx.run(ctx.on.update_status(), State())
+    assert state.unit_status == ops.ActiveStatus("running; GeoIP not installed")

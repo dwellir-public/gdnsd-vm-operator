@@ -1,0 +1,27 @@
+{"test": "healthy_multi", "result": {"seconds": 0.004, "answers": ["192.0.2.11", "192.0.2.12"], "ttl": [60]}}
+{"test": "healthy_primary", "result": {"seconds": 0.001, "answers": ["192.0.2.11"], "ttl": [60]}}
+{"test": "healthy_monitored_ttl", "result": 60}
+{"test": "ecs_geography", "result": {"subnet": "44.201.71.32", "answer": ["192.0.2.11"], "options": ["ECS 44.201.71.0/24 scope/10"]}}
+{"test": "ecs_geography", "result": {"subnet": "18.181.231.202", "answer": ["192.0.2.12"], "options": ["ECS 18.181.231.0/24 scope/13"]}}
+{"test": "ecs_geography", "result": {"subnet": "185.127.230.23", "answer": ["192.0.2.11"], "options": ["ECS 185.127.230.0/24 scope/21"]}}
+{"test": "ecs_geography", "result": {"subnet": "139.130.4.5", "answer": ["192.0.2.12"], "options": ["ECS 139.130.4.0/24 scope/16"]}}
+{"test": "ecs_geography", "result": {"subnet": "198.18.0.1", "answer": ["192.0.2.11"], "options": ["ECS 198.18.0.0/24 scope/15"]}}
+{"test": "cname_alias", "result": ["static.x.dwellir.com."]}
+{"test": "cname__acme-challenge.static", "result": ["static.acme.dwellir.tech."]}
+{"test": "equal_distribution", "result": {"counts": {"192.0.2.11": 610, "192.0.2.12": 590}, "first_address_fraction": 0.5083333333333333, "expected": 0.5, "tolerance": 0.07}}
+{"test": "weighted_distribution", "result": {"counts": {"192.0.2.12": 796, "192.0.2.11": 404}, "first_address_fraction": 0.33666666666666667, "expected": 0.3333333333333333, "tolerance": 0.07}}
+{"test": "tcp_static", "result": "pass"}
+{"test": "primary_failure", "result": {"seconds": 1.809, "answers": ["192.0.2.12"], "ttl": [60]}}
+{"test": "multi_filter_failure", "result": {"seconds": 0.001, "answers": ["192.0.2.12"], "ttl": [60]}}
+{"test": "degraded_multi_ttl", "result": 60}
+{"test": "weighted_surviving_weight_2", "result": "pass"}
+{"test": "us_geographic_failure_falls_back_to_ap", "result": "pass"}
+{"test": "primary_recovery", "result": {"seconds": 2.01, "answers": ["192.0.2.11"], "ttl": [60]}}
+{"test": "multi_filter_other_failure", "result": {"seconds": 0.001, "answers": ["192.0.2.11"], "ttl": [60]}}
+{"test": "weighted_surviving_weight_1", "result": "pass"}
+{"test": "ap_geographic_failure_falls_back_to_us", "result": "pass"}
+{"test": "all_down_multi", "result": {"seconds": 1.809, "answers": ["192.0.2.11", "192.0.2.12"], "ttl": [60]}}
+{"test": "all_down_primary", "result": {"seconds": 0.001, "answers": ["192.0.2.11"], "ttl": [60]}}
+{"test": "all_down_geography_returns_preferred_address", "result": "pass"}
+{"test": "no_recursive_service", "result": {"rcode": "REFUSED"}}
+{"test": "restored_healthy", "result": {"seconds": 0.001, "answers": ["192.0.2.11", "192.0.2.12"], "ttl": [60]}}

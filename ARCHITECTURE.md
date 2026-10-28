@@ -23,7 +23,12 @@ The control response supplies the running version for Juju. UDP and TCP root SOA
 probes on localhost confirm that both DNS listeners respond. The probe accepts
 NOERROR, NXDOMAIN and REFUSED, rejects malformed transactions and SERVFAIL, and
 never changes records. It checks DNS service availability, not backend pool health
-or recursive latency. Status checks do not attempt a restart or package changes.
+or recursive latency. Each observation also inspects the managed MaxMind file's
+metadata and includes its database type and UTC build timestamp in the message.
+Invalid metadata is a configuration issue and produces waiting status while
+healthy DNS continues. Diagnostic get-info adds its SHA-256. These are installed
+file observations because gdnsd has no loaded-database-version query.
+Status checks do not attempt a restart or package changes.
 
 ## Configuration transactions
 

@@ -165,6 +165,15 @@ status asking for a valid configuration version. The health check still runs
 and takes priority for an unhealthy daemon. Successful matching configuration
 validation/application clears that issue, while unrelated actions do not.
 
+## Installed GeoIP version visibility
+
+The user requested installed database visibility in update-status and get-info.
+Read the database type and UTC build timestamp from MaxMind metadata on each
+observation, and retain that summary in running, waiting and blocked messages.
+Invalid metadata is a logged configuration issue with waiting status. Diagnostic
+get-info also supplies the installed file's SHA-256 and labels the source as
+installed-file-metadata. Do not claim gdnsd exposes a loaded database version.
+
 ## Before and target compliance matrix
 
 The target directory is empty. Projected PASS means planned, not verified.
@@ -182,6 +191,7 @@ The target directory is empty. Projected PASS means planned, not verified.
 | CONFIG-001, OPS-001/002/003, METADATA-001 | Required-baseline with blockchain applicability | N/A, generic DNS workload | No blockchain contracts; generic package/service helpers still planned | N/A with applicability reason preserved | Generic scope confirmed |
 | OBS-001, skill topology | Required-baseline when publishing telemetry | N/A, no telemetry integration requested | Defer telemetry interface and backend validation | No telemetry compliance claim | Not assessed |
 | CONFIG-002/003, skill blockchain configuration | Recommended-default with blockchain applicability | N/A, generic DNS workload | Adopt only useful digest tracking as a design choice | No blockchain configuration compliance claim | Not executed |
+| Installed GeoIP version visibility | Task-required, added during implementation | GAP, no installed metadata in status | Read metadata on each status observation and expose type, UTC build timestamp and diagnostic checksum | PASS after unit and three-model live checks | Not executed |
 | GeoIP action and remembered URL | Task-required, added during implementation | GAP, no database action | Add verified atomic replacement, per-unit persisted URL, results, rollback and protected-zone guard | PASS after unit and Frankfurt live checks | Not executed |
 | Configuration diagnostics and waiting status | Task-required, added during implementation | PARTIAL, actions fail and log only | Retain scoped errors in StoredState, log reasons and wait for valid replacement | PASS after event and live rejection/recovery checks | Not executed |
 | Local health and running workload version | Task-required, added during implementation | PARTIAL, systemd observation only | Add local control and UDP/TCP checks on every update-status and publish running version | PASS after event tests and live status checks | Not executed |

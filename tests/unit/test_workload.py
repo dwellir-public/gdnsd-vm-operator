@@ -294,7 +294,7 @@ def test_health_reports_running_version_and_probes_dns(tmp_path):
         probe=lambda: probes.append(True),
     )
     result = work.health()
-    assert result["healthy"] and result["message"] == "running"
+    assert result["healthy"] and result["message"].startswith("running;")
     assert result["workload-version"] == "3.8.2"
     assert probes == [True]
 
@@ -308,7 +308,7 @@ def test_health_stopped_does_not_probe_or_restart(tmp_path):
 
     work = Workload(command=command, probe=lambda: pytest.fail("must not probe stopped service"))
     result = work.health()
-    assert not result["healthy"] and result["message"] == "inactive"
+    assert not result["healthy"] and result["message"].startswith("inactive;")
     assert len(calls) == 1
 
 

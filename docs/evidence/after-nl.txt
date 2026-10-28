@@ -1,0 +1,5 @@
+872d188294e33f95f6a906be1dfeada4854e961cac3ca00a62dedbf823042822  /etc/gdnsd/config
+1280bcbf115c61f9350cae8cc6623aa41071d8fbb87fcb17a6ad5255bfc6b732  /etc/gdnsd/zones/x.dwellir.com
+1394af009121820d43b620fea19fc4b6f09141698091c00f70f225a982389035  /etc/gdnsd/geoip/GeoLite2-City.mmdb
+MainPID=23020
+gdnsd	3.8.2-1build2

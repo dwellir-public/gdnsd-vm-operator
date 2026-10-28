@@ -168,3 +168,36 @@ def test_protected_equivalent_or_child_zone_prevents_database_change(setup, name
         work.sync_geoip("https://example.com/city.mmdb")
     assert database.read_bytes() == b"previous database"
     assert not calls
+
+
+def test_installed_database_metadata_has_utc_build_time(setup):
+    work, database, _ = setup
+    database.write_bytes(FIXTURE.read_bytes())
+    info = work.geoip_info()
+    assert info["geoip-state"] == "installed"
+    assert info["geoip-database-type"] == "GeoIP2-City"
+    assert info["geoip-build-time"].endswith("Z")
+    assert info["geoip-build-epoch"] > 0
+    assert info["geoip-build-time"] in info["geoip-summary"]
+    assert "geoip-sha256" not in info
+    assert (
+        work.geoip_info(include_sha256=True)["geoip-sha256"]
+        == hashlib.sha256(FIXTURE.read_bytes()).hexdigest()
+    )
+
+
+def test_missing_database_is_reported_without_validation_error(setup):
+    work, database, _ = setup
+    database.unlink()
+    info = work.geoip_info()
+    assert info["geoip-state"] == "absent"
+    assert info["geoip-summary"] == "GeoIP not installed"
+    assert not info.get("geoip-error")
+
+
+def test_invalid_installed_database_is_a_diagnosable_configuration_error(setup):
+    work, _, _ = setup
+    info = work.geoip_info()
+    assert info["geoip-state"] == "invalid"
+    assert "MaxMind" in info["geoip-error"]
+    assert "invalid" in info["geoip-summary"]

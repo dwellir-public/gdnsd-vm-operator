@@ -60,7 +60,7 @@ class GdnsdCharm(ops.CharmBase):
         """Observe service health without changing host files or service state."""
         self._observe_status()
 
-    def _observe_status(self) -> None:
+    def _observe_status(self, request_error: bool = False) -> None:
         """Publish the observed workload version and local service health."""
         try:
             health = self.workload.health()
@@ -69,18 +69,42 @@ class GdnsdCharm(ops.CharmBase):
         except (WorkloadError, ValueError) as exc:
             self.unit.status = ops.BlockedStatus(str(exc))
             return
+        errors = dict(self._stored.config_errors)
+        if inspection_error := health.get("geoip-error"):
+            logger.warning("GeoIP database inspection failed: %s", inspection_error)
+            errors["geoip-inspection"] = str(inspection_error)
+        else:
+            errors.pop("geoip-inspection", None)
+        self._stored.config_errors = errors
+        summary = str(health.get("geoip-summary", ""))
         if not health["healthy"]:
-            self.unit.status = ops.BlockedStatus(health["message"])
+            self.unit.status = ops.BlockedStatus(
+                self._with_geoip_summary(health["message"], summary)
+            )
         elif self._stored.config_errors:
             key = next(iter(self._stored.config_errors)).removeprefix("read:")
             message = (
                 "Supply a valid GeoIP database via sync-geoip; see action logs"
-                if key == "geoip"
+                if key in {"geoip", "geoip-inspection"}
                 else f"Supply a valid configuration for {key[:100]}; see action logs"
             )
-            self.unit.status = ops.WaitingStatus(message)
+            self.unit.status = ops.WaitingStatus(self._with_geoip_summary(message, summary))
+        elif request_error:
+            self.unit.status = ops.WaitingStatus(
+                self._with_geoip_summary(
+                    "Supply a valid configuration request; see action logs",
+                    summary,
+                )
+            )
         else:
-            self.unit.status = ops.ActiveStatus("running")
+            self.unit.status = ops.ActiveStatus(
+                self._with_geoip_summary(health["message"], summary)
+            )
+
+    @staticmethod
+    def _with_geoip_summary(message: str, summary: str) -> str:
+        """Include installed database metadata once in each reported status."""
+        return f"{message}; {summary}" if summary and summary not in message else message
 
     def _on_action(self, event: ops.ActionEvent) -> None:
         """Dispatch explicit operator requests and report clean action failures."""
@@ -137,11 +161,7 @@ class GdnsdCharm(ops.CharmBase):
                 self._observe_status()
             elif name in {"get_config_action", "validate_config_action", "apply_config_action"}:
                 # Invalid targets cannot identify persistent configuration to repair.
-                self._observe_status()
-                if isinstance(self.unit.status, ops.ActiveStatus):
-                    self.unit.status = ops.WaitingStatus(
-                        "Supply a valid configuration request; see action logs"
-                    )
+                self._observe_status(request_error=True)
             event.fail(message)
 
     @staticmethod

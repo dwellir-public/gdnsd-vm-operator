@@ -1,0 +1,54 @@
+[
+  {
+    "ip": "44.201.71.32",
+    "tcp": false,
+    "status": 0,
+    "answer": "static.x.dwellir.com.\t60\tIN\tA\t192.0.2.100\n"
+  },
+  {
+    "ip": "44.201.71.32",
+    "tcp": true,
+    "status": 0,
+    "answer": "static.x.dwellir.com.\t60\tIN\tA\t192.0.2.100\n"
+  },
+  {
+    "ip": "18.181.231.202",
+    "tcp": false,
+    "status": 0,
+    "answer": "static.x.dwellir.com.\t60\tIN\tA\t192.0.2.100\n"
+  },
+  {
+    "ip": "18.181.231.202",
+    "tcp": true,
+    "status": 0,
+    "answer": "static.x.dwellir.com.\t60\tIN\tA\t192.0.2.100\n"
+  },
+  {
+    "ip": "63.184.230.135",
+    "tcp": false,
+    "status": 0,
+    "answer": "static.x.dwellir.com.\t60\tIN\tA\t192.0.2.100\n"
+  },
+  {
+    "ip": "63.184.230.135",
+    "tcp": true,
+    "status": 0,
+    "answer": "static.x.dwellir.com.\t60\tIN\tA\t192.0.2.100\n"
+  },
+  {
+    "parent": "ns-1309.awsdns-35.org",
+    "protected_n_delegation": "n.dwellir.com.\t\t300\tIN\tNS\tns1.n.dwellir.com.\nn.dwellir.com.\t\t300\tIN\tNS\tns2.n.dwellir.com.\nns1.n.dwellir.com.\t300\tIN\tA\t185.127.230.23\nns2.n.dwellir.com.\t300\tIN\tA\t185.176.96.151\n"
+  },
+  {
+    "parent": "ns-1746.awsdns-26.co.uk",
+    "protected_n_delegation": "n.dwellir.com.\t\t300\tIN\tNS\tns1.n.dwellir.com.\nn.dwellir.com.\t\t300\tIN\tNS\tns2.n.dwellir.com.\nns1.n.dwellir.com.\t300\tIN\tA\t185.127.230.23\nns2.n.dwellir.com.\t300\tIN\tA\t185.176.96.151\n"
+  },
+  {
+    "parent": "ns-cloud-a1.googledomains.com",
+    "protected_n_delegation": "n.dwellir.com.\t\t300\tIN\tNS\tns2.n.dwellir.com.\nn.dwellir.com.\t\t300\tIN\tNS\tns1.n.dwellir.com.\nns1.n.dwellir.com.\t300\tIN\tA\t185.127.230.23\nns2.n.dwellir.com.\t300\tIN\tA\t185.176.96.151\n"
+  },
+  {
+    "parent": "ns-cloud-a2.googledomains.com",
+    "protected_n_delegation": "n.dwellir.com.\t\t300\tIN\tNS\tns2.n.dwellir.com.\nn.dwellir.com.\t\t300\tIN\tNS\tns1.n.dwellir.com.\nns2.n.dwellir.com.\t300\tIN\tA\t185.176.96.151\nns1.n.dwellir.com.\t300\tIN\tA\t185.127.230.23\n"
+  }
+]

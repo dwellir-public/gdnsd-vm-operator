@@ -1,0 +1,16 @@
+| Rule | Authority | Authoritative source |
+| --- | --- | --- |
+| BUILD-001 | required-baseline | [Packaging and dependency rules](references/generic/standards.md) |
+| CONFIG-001 | required-baseline | [Install-source validation](references/blockchain/config-strategy.md) |
+| CONFIG-002 | recommended-default | [Effective configuration tracking](references/blockchain/config-strategy.md) |
+| CONFIG-003 | recommended-default | [Configuration contract](references/blockchain/config-strategy.md) |
+| DEPLOY-001 | required-baseline | [Built artifact and integration behavior](references/generic/testing.md) |
+| METADATA-001 | required-baseline | [Shared metadata production](references/blockchain/blockchain-metadata.md) |
+| OBS-001 | required-baseline | [Source-to-backend identity](references/juju-topology.md) |
+| OPS-001 | required-baseline | [Service-control behavior](references/blockchain/action-contract.md) |
+| OPS-002 | required-baseline | [Service action interface](references/blockchain/action-contract.md) |
+| OPS-003 | required-baseline | [Operator diagnostics](references/blockchain/action-contract.md) |
+| UPGRADE-001 | required-baseline | [Charm refresh safety](references/generic/juju-concepts.md) |
+
+11 source outcomes: 9 required, 2 recommended.
+PASS: source IDs, authorities and catalog coverage match. This is not a charm test result.

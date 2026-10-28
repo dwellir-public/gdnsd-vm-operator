@@ -289,10 +289,29 @@ class Workload:
 
         return sync_database(self, url, sha256)
 
+    def geoip_info(self, include_sha256: bool = False) -> dict:
+        """Report the installed database's type, UTC build timestamp and optional hash."""
+        from geoip import inspect_database
+
+        return inspect_database(
+            self.config_dir / "geoip/GeoLite2-City.mmdb", include_sha256=include_sha256
+        )
+
     def health(self) -> dict:
         """Observe systemd, the running version and local DNS without mutation."""
         version = ""
         state = "unknown"
+        geoip = self.geoip_info()
+
+        def result(healthy: bool, state: str, message: str) -> dict:
+            return {
+                "healthy": healthy,
+                "state": state,
+                "message": f"{message}; {geoip['geoip-summary']}",
+                "workload-version": version,
+                **geoip,
+            }
+
         try:
             state = (
                 self.command(
@@ -301,7 +320,7 @@ class Workload:
                 or "unknown"
             )
             if state != "active":
-                return {"healthy": False, "message": state, "workload-version": version}
+                return result(False, state, state)
             status = self.command(["gdnsdctl", "-t", "5", "status"])
             match = re.search(r"version\s+(\S+)\s+running\s+at\s+PID\s+\d+", status)
             if not match:
@@ -309,8 +328,8 @@ class Workload:
             version = match[1]
             self.probe()
         except WorkloadError as exc:
-            return {"healthy": False, "message": f"{state}; {exc}", "workload-version": version}
-        return {"healthy": True, "message": "running", "workload-version": version}
+            return result(False, state, f"{state}; {exc}")
+        return result(True, "running", "running")
 
     def is_active(self) -> bool:
         """Observe systemd state without attempting recovery or a restart."""
@@ -336,5 +355,7 @@ class Workload:
             "workload-version": health["workload-version"],
             "service-name": "gdnsd.service",
             "active": health["healthy"],
-            "state": health["message"],
+            "state": health["state"],
+            "message": health["message"],
+            **self.geoip_info(include_sha256=True),
         }

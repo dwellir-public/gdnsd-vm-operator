@@ -1,0 +1,33 @@
+lint: uv-sync> .venv/bin/uv sync --locked --python-preference system --no-default-groups --group lint -p CHARM_REPO/.venv/bin/python
+lint: commands[0]> ruff check src tests scripts
+All checks passed!
+lint: commands[1]> ruff format --check src tests scripts
+12 files already formatted
+lint: OK ✔ in 0.04 seconds
+unit: uv-sync> .venv/bin/uv sync --locked --python-preference system --no-default-groups --group unit -p CHARM_REPO/.venv/bin/python
+unit: commands[0]> coverage run -m pytest tests/unit
+============================= test session starts ==============================
+platform linux -- Python 3.13.9, pytest-9.2.0, pluggy-1.7.0
+cachedir: .tox/unit/.pytest_cache
+rootdir: CHARM_REPO
+configfile: pyproject.toml
+collected 128 items
+
+tests/unit/test_charm.py ............................................... [ 36%]
+.................                                                        [ 50%]
+tests/unit/test_cli.py .............                                     [ 60%]
+tests/unit/test_geoip.py ..............                                  [ 71%]
+tests/unit/test_workload.py .....................................        [100%]
+
+============================= 128 passed in 2.09s ==============================
+unit: commands[1]> coverage report
+Name              Stmts   Miss Branch BrPart  Cover   Missing
+-------------------------------------------------------------
+src/charm.py        108      2     44      3    97%   50, 141->145, 180
+src/geoip.py        126     29     48     10    73%   31-50, 64, 66, 68->70, 83, 109, 123, 126, 152->158, 155->158, 165, 169-170
+src/workload.py     236     56     64     12    74%   36-43, 57-83, 107, 116, 120, 129, 148, 180, 197, 201-202, 206, 220, 239, 262, 271-272, 308, 319-320, 324-328
+-------------------------------------------------------------
+TOTAL               470     87    156     25    79%
+  lint: OK (0.04=setup[0.02]+cmd[0.01,0.01] seconds)
+  unit: OK (3.07=setup[0.02]+cmd[2.66,0.40] seconds)
+  congratulations :) (3.13 seconds)

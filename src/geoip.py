@@ -10,6 +10,7 @@ import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import UTC, datetime
 from pathlib import Path
 
 import maxminddb
@@ -74,6 +75,47 @@ def validate_database(path: Path) -> dict:
         raise WorkloadError(
             f"MaxMind database validation failed: {exc}. Supply a raw City/Country .mmdb file"
         ) from exc
+
+
+def inspect_database(path: Path, include_sha256: bool = False) -> dict:
+    """Describe the installed file without claiming gdnsd exposes its loaded version."""
+    info = {
+        "geoip-database-path": str(path),
+        "geoip-version-source": "installed-file-metadata",
+        "geoip-state": "absent",
+        "geoip-database-type": "",
+        "geoip-build-epoch": 0,
+        "geoip-build-time": "",
+        "geoip-summary": "GeoIP not installed",
+    }
+    if not path.exists():
+        return info
+    try:
+        metadata = validate_database(path)
+        built = (
+            datetime.fromtimestamp(metadata["build-epoch"], UTC).isoformat().replace("+00:00", "Z")
+        )
+        info.update(
+            {
+                "geoip-state": "installed",
+                "geoip-database-type": metadata["database-type"],
+                "geoip-build-epoch": metadata["build-epoch"],
+                "geoip-build-time": built,
+                "geoip-summary": f"GeoIP installed: {metadata['database-type']} {built}",
+            }
+        )
+        if include_sha256:
+            with path.open("rb") as stream:
+                info["geoip-sha256"] = hashlib.file_digest(stream, "sha256").hexdigest()
+    except (WorkloadError, OSError, ValueError, OverflowError) as exc:
+        info.update(
+            {
+                "geoip-state": "invalid",
+                "geoip-summary": "GeoIP installed: invalid database",
+                "geoip-error": str(exc),
+            }
+        )
+    return info
 
 
 def validate_candidate(workload, database: Path, download: Path) -> None:
