@@ -30,6 +30,19 @@ healthy DNS continues. Diagnostic get-info adds its SHA-256. These are installed
 file observations because gdnsd has no loaded-database-version query.
 Status checks do not attempt a restart or package changes.
 
+## Compressed GeoIP downloads
+
+GeoIP download normalization precedes the existing MaxMind and gdnsd validation.
+The original URL remains in per-unit state. Recognized Nextcloud share pages
+resolve to their download endpoint, with at most one retry. Raw files, gzip MMDB,
+and standard tar/tar.gz packages are normalized into one staging MMDB. Download
+and expanded sizes are bounded separately. Tar headers are checked before the
+stdlib parser can process extension metadata. No archive path is extracted to
+the filesystem; only one selected regular MMDB is copied to a fixed staging path.
+Checksum input verifies the transport artifact, while action results distinguish
+its hash from the installed MMDB hash. Native validation, atomic application,
+protected-zone checks and rollback then use the normalized file.
+
 ## Configuration transactions
 
 Persistent configuration uses `/etc/gdnsd/config` and `/etc/gdnsd/zones/<zone>`.

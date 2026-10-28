@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import re
 import shutil
 import stat
+import tarfile
 import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import zlib
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import maxminddb
 
@@ -27,28 +30,149 @@ def validate_url(url: str) -> None:
         raise WorkloadError("GeoIP URL must be an HTTP or HTTPS database endpoint")
 
 
-def download_database(url: str, destination: Path) -> str:
-    """Stream a bounded raw database download and compute its SHA-256."""
-    validate_url(url)
+def _copy_limited(source, destination, initial: bytes = b"") -> str:
+    """Copy one bounded payload and return its content digest."""
     digest = hashlib.sha256()
-    request = urllib.request.Request(url, headers={"User-Agent": "gdnsd-vm/0.1"})
+    total = 0
+    block = initial
+    while True:
+        if block:
+            total += len(block)
+            if total > MAX_DATABASE_BYTES:
+                raise WorkloadError("GeoIP data exceeds the 256 MiB size limit")
+            digest.update(block)
+            destination.write(block)
+        block = source.read(1024 * 1024)
+        if not block:
+            break
+    if not total:
+        raise WorkloadError("GeoIP database is empty")
+    return digest.hexdigest()
+
+
+def download_database(url: str, destination: Path) -> str:
+    """Download bounded bytes, resolving recognizable Nextcloud share pages once."""
+    validate_url(url)
+    current = url
     try:
-        with urllib.request.urlopen(request, timeout=30) as response, destination.open("wb") as out:
-            validate_url(response.geturl())
-            if url.startswith("https:") and not response.geturl().startswith("https:"):
-                raise WorkloadError("GeoIP download redirected from HTTPS to insecure HTTP")
-            total = 0
-            while block := response.read(1024 * 1024):
-                total += len(block)
-                if total > MAX_DATABASE_BYTES:
-                    raise WorkloadError("GeoIP download exceeds the 256 MiB limit")
-                digest.update(block)
-                out.write(block)
-            if total == 0:
-                raise WorkloadError("GeoIP download is empty")
+        for attempt in range(2):
+            request = urllib.request.Request(current, headers={"User-Agent": "gdnsd-vm/0.1"})
+            with urllib.request.urlopen(request, timeout=30) as response:
+                final = response.geturl()
+                validate_url(final)
+                if url.startswith("https:") and not final.startswith("https:"):
+                    raise WorkloadError("GeoIP download redirected from HTTPS to insecure HTTP")
+                prefix = response.read(65536)
+                parsed = urllib.parse.urlsplit(final)
+                if (
+                    attempt == 0
+                    and "text/html" in response.headers.get("Content-Type", "")
+                    and re.fullmatch(r".*/s/[^/]+/?", parsed.path)
+                    and b"nextcloud" in prefix.lower()
+                ):
+                    current = urllib.parse.urlunsplit(
+                        parsed._replace(path=parsed.path.rstrip("/") + "/download", fragment="")
+                    )
+                    continue
+                with destination.open("wb") as out:
+                    return _copy_limited(response, out, prefix)
     except (OSError, ValueError, urllib.error.URLError) as exc:
         raise WorkloadError(f"GeoIP download failed: {exc}") from exc
-    return digest.hexdigest()
+    raise WorkloadError("GeoIP share did not supply a downloadable file")
+
+
+def _safe_tar_headers(path: Path) -> bool:
+    """Bound headers before tarfile can process recursive extension metadata."""
+    size = path.stat().st_size
+    total = 0
+    count = 0
+    with path.open("rb") as stream:
+        while block := stream.read(tarfile.BLOCKSIZE):
+            if not block.strip(b"\0"):
+                return count > 0
+            try:
+                member = tarfile.TarInfo.frombuf(block, "utf-8", "surrogateescape")
+            except tarfile.HeaderError as exc:
+                if count == 0:
+                    return False
+                raise WorkloadError(f"GeoIP archive has an invalid header: {exc}") from exc
+            count += 1
+            try:
+                member.name.encode("utf-8")
+            except UnicodeError as exc:
+                raise WorkloadError("GeoIP archive contains a non-UTF-8 name") from exc
+            name = PurePosixPath(member.name)
+            if (
+                count > 1024
+                or member.type not in {tarfile.REGTYPE, tarfile.AREGTYPE, tarfile.DIRTYPE}
+                or name.is_absolute()
+                or ".." in name.parts
+                or "\\" in member.name
+            ):
+                raise WorkloadError("GeoIP archive contains unsafe or unsupported metadata")
+            if member.size < 0 or (member.isdir() and member.size != 0):
+                raise WorkloadError("GeoIP archive has an invalid member size")
+            total += member.size
+            if total > MAX_DATABASE_BYTES:
+                raise WorkloadError("GeoIP archive exceeds the 256 MiB size limit")
+            if stream.tell() + member.size > size:
+                raise WorkloadError("GeoIP archive is truncated")
+            stream.seek(((member.size + 511) // 512) * 512, 1)
+    return count > 0
+
+
+def unpack_database(download: Path, destination: Path) -> dict:
+    """Decode raw/gzip data or copy exactly one safe regular MMDB from a tar archive."""
+    with download.open("rb") as stream:
+        compressed = stream.read(2) == b"\x1f\x8b"
+    try:
+        with tempfile.TemporaryDirectory(prefix="geoip-unpack-", dir=destination.parent) as folder:
+            payload = download
+            if compressed:
+                payload = Path(folder) / "uncompressed"
+                with gzip.open(download, "rb") as source, payload.open("wb") as out:
+                    _copy_limited(source, out)
+            member_name = ""
+            archive = tarfile.open(payload, "r:") if _safe_tar_headers(payload) else None
+            if archive is not None:
+                kind = "tar.gz" if compressed else "tar"
+                with archive:
+                    selected = []
+                    total = 0
+                    for index, member in enumerate(archive):
+                        name = PurePosixPath(member.name)
+                        if (
+                            index >= 1024
+                            or name.is_absolute()
+                            or ".." in name.parts
+                            or "\\" in member.name
+                            or not (member.isfile() or member.isdir())
+                        ):
+                            raise WorkloadError("GeoIP archive contains an unsafe entry")
+                        if member.size < 0:
+                            raise WorkloadError("GeoIP archive has an invalid member size")
+                        total += member.size
+                        if total > MAX_DATABASE_BYTES:
+                            raise WorkloadError("GeoIP archive exceeds the 256 MiB size limit")
+                        if member.isfile() and name.suffix.lower() == ".mmdb":
+                            selected.append(member)
+                    if len(selected) != 1:
+                        raise WorkloadError(
+                            "GeoIP archive must contain exactly one regular .mmdb file"
+                        )
+                    member_name = selected[0].name
+                    source = archive.extractfile(selected[0])
+                    if source is None:
+                        raise WorkloadError("GeoIP archive database cannot be read")
+                    with source, destination.open("wb") as out:
+                        digest = _copy_limited(source, out)
+            else:
+                kind = "gzip" if compressed else "raw"
+                with payload.open("rb") as source, destination.open("wb") as out:
+                    digest = _copy_limited(source, out)
+    except (OSError, EOFError, tarfile.TarError, zlib.error) as exc:
+        raise WorkloadError(f"GeoIP gzip/archive decoding failed: {exc}") from exc
+    return {"sha256": digest, "download-format": kind, "archive-member": member_name}
 
 
 def validate_database(path: Path) -> dict:
@@ -169,10 +293,13 @@ def sync_database(workload, url: str, expected_sha256: str = "") -> dict:
     check_protected_zones(workload)
     workload.state_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="geoip-download-", dir=workload.state_dir) as directory:
-        downloaded = Path(directory) / "database.mmdb"
-        digest = download_database(url, downloaded)
-        if expected_sha256 and digest != expected_sha256.lower():
+        artifact = Path(directory) / "database.download"
+        download_digest = download_database(url, artifact)
+        if expected_sha256 and download_digest != expected_sha256.lower():
             raise WorkloadError("GeoIP SHA-256 mismatch; the active database was not changed")
+        downloaded = Path(directory) / "database.mmdb"
+        payload = unpack_database(artifact, downloaded)
+        digest = payload["sha256"]
         metadata = validate_database(downloaded)
         with workload._lock():
             check_protected_zones(workload)
@@ -180,7 +307,8 @@ def sync_database(workload, url: str, expected_sha256: str = "") -> dict:
             if before is not None and hashlib.sha256(before).hexdigest() == digest:
                 return {
                     "url": url,
-                    "sha256": digest,
+                    **payload,
+                    "download-sha256": download_digest,
                     "changed": False,
                     "validated": True,
                     **metadata,
@@ -215,4 +343,11 @@ def sync_database(workload, url: str, expected_sha256: str = "") -> dict:
                 raise WorkloadError(
                     f"GeoIP activation failed: {apply_error}; previous database restored"
                 ) from apply_error
-            return {"url": url, "sha256": digest, "changed": True, "validated": True, **metadata}
+            return {
+                "url": url,
+                **payload,
+                "download-sha256": download_digest,
+                "changed": True,
+                "validated": True,
+                **metadata,
+            }

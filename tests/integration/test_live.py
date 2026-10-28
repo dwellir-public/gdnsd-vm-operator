@@ -263,3 +263,118 @@ def test_geoip_sync_remembers_url_and_preserves_valid_data_on_failure(target):
     )
     assert action(juju, app, "sync-geoip", {})["url"] == url
     assert protected_hash(juju, app).strip() == "absent"
+
+
+def test_compressed_geoip_operator_download(target, tmp_path):
+    """Upgrade the isolated test server using an operator-supplied compressed URL."""
+    url = os.environ.get("GDNSD_COMPRESSED_GEOIP_URL")
+    if not url:
+        pytest.skip("set GDNSD_COMPRESSED_GEOIP_URL for the operator-supplied data test")
+    if os.environ.get("GDNSD_TEST_GEOIP") != "1":
+        pytest.fail("compressed database test requires explicit GDNSD_TEST_GEOIP=1")
+    juju, app, _ = target
+    assert protected_hash(juju, app).strip() == "absent"
+    # A single always-up x resource ensures native gdnsd actually uses this DB.
+    current = action(juju, app, "get-config", {"scope": "global"})
+    config = base64.b64decode(current["content-b64"]).decode()
+    if "geoip_compressed_test" not in config:
+        assert not re.search(r"\bplugins\s*=>", config), (
+            "use a dedicated test config without other plugin declarations"
+        )
+        config += """
+plugins => {
+  geoip => {
+    maps => {
+      geoip_compressed_test => {
+        geoip2_db => /etc/gdnsd/geoip/GeoLite2-City.mmdb
+        datacenters => [eu, us, ap]
+        map => { default => [eu, us, ap], NA => [us, eu, ap], AS => [ap, eu, us] }
+      }
+    }
+    resources => {
+      geoip_compressed_test => {
+        map => geoip_compressed_test
+        service_types => up
+        dcmap => { eu => 192.0.2.21, us => 192.0.2.22, ap => 192.0.2.23 }
+      }
+    }
+  }
+}
+"""
+        action(
+            juju,
+            app,
+            "apply-config",
+            {
+                "scope": "global",
+                "expected-sha256": current["sha256"],
+                "content-b64": base64.b64encode(config.encode()).decode(),
+            },
+        )
+    current = action(juju, app, "get-config", {"zone": "x.dwellir.com"})
+    zone = base64.b64decode(current["content-b64"]).decode()
+    if "geoip-upgrade-check " not in zone:
+        serial = re.search(r"(SOA\s+\S+\s+\S+\s+)(\d+)", zone)
+        assert serial
+        zone = zone[: serial.start(2)] + str(int(serial[2]) + 1) + zone[serial.end(2) :]
+        zone += "geoip-upgrade-check 60/60 DYNA geoip!geoip_compressed_test\n"
+        action(
+            juju,
+            app,
+            "apply-config",
+            {
+                "zone": "x.dwellir.com",
+                "expected-sha256": current["sha256"],
+                "content-b64": base64.b64encode(zone.encode()).decode(),
+            },
+        )
+    before = action(juju, app, "get-info", {})
+    before_pid = juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID")
+    params = {"url": url}
+    if checksum := os.environ.get("GDNSD_COMPRESSED_GEOIP_SHA256"):
+        params["sha256"] = checksum
+    installed = action(juju, app, "sync-geoip", params)
+    assert installed["url"] == url
+    assert installed["download-format"] == "tar.gz"
+    assert installed["database-type"] == "GeoLite2-City"
+    after = action(juju, app, "get-info", {})
+    assert after["geoip-sha256"] == installed["sha256"]
+    if expected := os.environ.get("GDNSD_COMPRESSED_DATABASE_SHA256"):
+        assert after["geoip-sha256"] == expected
+    if expected := os.environ.get("GDNSD_COMPRESSED_BUILD_TIME"):
+        assert after["geoip-build-time"] == expected
+    if before.get("geoip-sha256") != after["geoip-sha256"]:
+        assert installed["changed"]
+        assert juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID") != before_pid
+    status = juju.status().apps[app].units[f"{app}/0"].workload_status
+    assert status.current == "active" and after["geoip-build-time"] in status.message
+    checks = []
+    for address, expected in [
+        ("8.8.8.8", "192.0.2.22"),
+        ("81.2.69.142", "192.0.2.21"),
+        ("18.181.231.202", "192.0.2.23"),
+    ]:
+        answer = juju.ssh(
+            f"{app}/0",
+            "dig @127.0.0.1 geoip-upgrade-check.x.dwellir.com "
+            f"A +subnet={address}/32 +noall +answer",
+        )
+        assert expected in answer
+        checks.append({"ecs": address, "answer": answer.strip()})
+    after_pid = juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID")
+    reused = action(juju, app, "sync-geoip", {})
+    assert reused["url"] == url and not reused["changed"]
+    assert juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID") == after_pid
+    assert protected_hash(juju, app).strip() == "absent"
+    # Keep the private share token out of portable evidence and version control.
+    import json
+
+    evidence = {
+        "installed": {k: v for k, v in installed.items() if k != "url"},
+        "reused": {k: v for k, v in reused.items() if k != "url"},
+        "info": after,
+        "ecs_checks": checks,
+        "status": status.message,
+    }
+    if output := os.environ.get("GDNSD_COMPRESSED_RESULT_FILE"):
+        Path(output).write_text(json.dumps(evidence, indent=2) + "\n")

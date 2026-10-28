@@ -112,8 +112,10 @@ Every change to the parent `dwellir.com` zone must use the separate
 
 ## Update the GeoIP database
 
-`sync-geoip` downloads a raw MaxMind City or Country `.mmdb` file to a staging
-directory. It checks the database metadata and sample lookups, then validates
+`sync-geoip` downloads a MaxMind City or Country database to a staging
+directory. It accepts raw `.mmdb`, gzip-compressed `.mmdb`, and standard tar or
+tar.gz archives containing exactly one regular `.mmdb` file. Compression is
+detected from the content, so the URL does not need a filename extension. It checks the database metadata and sample lookups, then validates
 the candidate with gdnsd. If the data changed, it atomically installs the file
 at `/etc/gdnsd/geoip/GeoLite2-City.mmdb` and runs `gdnsdctl replace` to load it.
 A failed activation restores the previous file and tries to load it again.
@@ -132,11 +134,16 @@ is supplied. The action displays the URL in its results and records the installe
 file's SHA-256, database type and build timestamp. Stored URLs survive hooks,
 reboots and charm refreshes. Units do not share this setting automatically.
 
-An optional `sha256` parameter verifies a known expected checksum for that call.
+An optional `sha256` parameter verifies the downloaded bytes for that call. For
+a compressed download, use the archive checksum. Results report the installed
+MMDB checksum as `sha256`, the downloaded file checksum as `download-sha256`,
+and the detected packaging as `download-format`.
 It is not retained for later calls, which allows a stable URL to provide a new
-database revision. Prefer HTTPS endpoints. The download must be a raw `.mmdb`
-file, not an HTML login page or compressed release archive. Downloads are limited
-to 256 MiB. A MaxMind license or a private download endpoint may be needed for
+database revision. Prefer HTTPS endpoints. Recognized Nextcloud public-share URLs are resolved to their download endpoint;
+the original share URL remains the remembered setting. HTML login pages still
+fail validation. Downloads and expanded data are each limited to 256 MiB.
+Archives with links, traversal paths, multiple databases or extension metadata
+are rejected before extraction. A MaxMind license or a private download endpoint may be needed for
 production databases; the charm does not obtain a license or generate a database.
 
 A failed download, validation or configuration application leaves the unit

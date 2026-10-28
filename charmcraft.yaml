@@ -72,4 +72,4 @@ actions:
       sha256:
         type: string
         default: ''
-        description: Optional SHA-256 digest for this invocation only.
+        description: Optional SHA-256 of downloaded bytes, before decompression, for this invocation only.
