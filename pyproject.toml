@@ -1,0 +1,28 @@
+[project]
+name = "gdnsd-vm-operator"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["ops>=3,<4"]
+
+[dependency-groups]
+dev = ["tox>=4", "tox-uv>=1.29"]
+lint = ["ruff"]
+unit = ["ops[testing]>=3,<4", "pytest>=8", "coverage[toml]"]
+integration = ["pytest>=8", "jubilant>=1.13"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+show_missing = true

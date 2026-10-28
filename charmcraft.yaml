@@ -1,0 +1,64 @@
+name: gdnsd-vm
+summary: Manage a gdnsd authoritative DNS service on a machine.
+description: |
+  Install or adopt gdnsd and manage its configuration through explicit actions.
+type: charm
+platforms:
+  ubuntu@24.04:amd64:
+parts:
+  charm:
+    plugin: uv
+    source: .
+    build-snaps: [astral-uv]
+config:
+  options:
+    protected-zones:
+      type: string
+      default: n.dwellir.com
+      description: Comma- or whitespace-separated zone names that actions cannot modify.
+actions:
+  get-config:
+    description: Read a zone or the global configuration with its SHA-256 digest.
+    params:
+      scope:
+        type: string
+        enum: [zone, global]
+        default: zone
+        description: Configuration scope to read.
+      zone:
+        type: string
+        default: ''
+        description: Zone filename, required for zone scope.
+  validate-config:
+    description: Validate a proposed configuration without applying it.
+    params: &update-params
+      scope:
+        type: string
+        enum: [zone, global]
+        default: zone
+        description: Configuration scope to update.
+      zone:
+        type: string
+        default: ''
+        description: Zone filename, required for zone scope.
+      content-b64:
+        type: string
+        description: Base64-encoded proposed file contents.
+      expected-sha256:
+        type: string
+        description: Digest returned by get-config; use absent for a missing zone.
+    required: [content-b64, expected-sha256]
+  apply-config:
+    description: Validate and atomically apply configuration with optimistic concurrency.
+    params: *update-params
+    required: [content-b64, expected-sha256]
+  service:
+    description: Perform an explicit gdnsd service operation.
+    params:
+      action:
+        type: string
+        enum: [start, stop, restart, status, enable, disable]
+        description: Service operation to perform.
+    required: [action]
+  get-info:
+    description: Return workload version, service state and managed paths.
