@@ -12,7 +12,7 @@ from charm import GdnsdCharm
 @pytest.fixture
 def workload():
     """Replace host operations at the workload boundary."""
-    with patch("charm.Workload") as factory:
+    with patch("charm.Workload") as factory, patch("charm.Exporter"):
         instance = factory.return_value
         instance.health.return_value = {
             "healthy": True,

@@ -216,3 +216,57 @@ See the latest [compressed GeoIP upgrade validation](docs/validation-compressed-
 
 US West deployment and the large configuration read repair are recorded in
 [docs/validation-us-west.md](docs/validation-us-west.md).
+
+## Metrics and logs
+
+The charm exposes native gdnsd statistics at `127.0.0.1:9153/metrics` through
+`gdnsd-exporter.service`. The exporter runs as the gdnsd user and reads the
+local control socket. It does not open a public port. Refreshing the charm
+updates this auxiliary service without restarting or upgrading gdnsd.
+
+Counters cover every zone served by the daemon, including direct test queries
+and local health probes. They cannot distinguish production n traffic from x
+traffic. This implementation does not record client addresses or query names.
+`gdnsd_scrape_success` is zero when collection or validation fails. Failed
+scrapes omit native counters rather than reporting false zeros. The exporter
+logs the failure to its journal. Native uptime and counters reset with gdnsd.
+
+Attach a compatible alloy-sub over both `juju-info` and `machine-observability`.
+Connect its `send-remote-write` and `send-loki-logs` endpoints to your Prometheus
+and Loki offers. Connect the principal's `grafana-dashboard` endpoint directly
+to the Grafana offer. For example, with your controller-qualified test model:
+
+```sh
+juju deploy -m "$MODEL" alloy-sub --channel latest/edge --revision 36
+juju integrate -m "$MODEL" gdnsd-vm:juju-info alloy-sub:juju-info
+juju integrate -m "$MODEL" gdnsd-vm:machine-observability alloy-sub:machine-observability
+juju consume -m "$MODEL" hyperborea:zerosoftwere@external/observability-stack.prometheus
+juju consume -m "$MODEL" hyperborea:zerosoftwere@external/observability-stack.loki
+juju consume -m "$MODEL" hyperborea:zerosoftwere@external/observability-stack.grafana
+juju integrate -m "$MODEL" alloy-sub:send-remote-write prometheus:receive-remote-write
+juju integrate -m "$MODEL" alloy-sub:send-loki-logs loki:logging
+juju integrate -m "$MODEL" gdnsd-vm:grafana-dashboard grafana:grafana-dashboard
+```
+
+The v3 declaration includes gdnsd and exporter journals and no alert artifacts.
+Metrics scrape every 15 seconds. Alloy derives each principal unit from its
+juju-info relation and forwards the source model, model UUID, application,
+unit and charm labels. The leader publishes the shared source declaration.
+
+The `gdnsd native server metrics` dashboard displays request rates, response
+codes, transport errors, uptime, collection status and journals. It has model
+and unit selectors. No alert thresholds are configured.
+
+Useful PromQL, scoped further with the source Juju labels as needed:
+
+```promql
+sum by (juju_model, protocol) (rate(gdnsd_requests_total[5m]))
+sum by (juju_model, rcode) (rate(gdnsd_responses_total[5m]))
+sum by (juju_model, protocol, operation) (rate(gdnsd_transport_errors_total[5m]))
+gdnsd_scrape_success
+```
+
+To diagnose local collection, run `curl -fsS http://127.0.0.1:9153/metrics` on
+the unit and inspect `journalctl -u gdnsd-exporter.service`. A healthy local
+endpoint does not prove backend delivery. Check recent Prometheus samples and
+Loki entries with the principal's Juju labels before relying on monitoring.

@@ -73,3 +73,10 @@ actions:
         type: string
         default: ''
         description: Optional SHA-256 of downloaded bytes, before decompression, for this invocation only.
+
+provides:
+  machine-observability:
+    interface: machine_observability
+    scope: container
+  grafana-dashboard:
+    interface: grafana_dashboard

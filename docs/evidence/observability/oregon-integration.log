@@ -1,0 +1,15 @@
+integration: uv-sync> .venv/bin/uv sync --locked --python-preference system --no-default-groups --group integration -p /home/erik/dwellir-charm-registry/INFRA/gdnsd-vm-operator/.venv/bin/python
+integration: commands[0]> pytest -v tests/integration -k 'native_metrics_are_loopback_only_and_count_queries or local_health_and_running_workload_version'
+============================= test session starts ==============================
+platform linux -- Python 3.13.9, pytest-9.2.0, pluggy-1.7.0 -- /home/erik/dwellir-charm-registry/INFRA/gdnsd-vm-operator/.tox/integration/bin/python
+cachedir: .tox/integration/.pytest_cache
+rootdir: /home/erik/dwellir-charm-registry/INFRA/gdnsd-vm-operator
+configfile: pyproject.toml
+collecting ... collected 10 items / 8 deselected / 2 selected
+
+tests/integration/test_live.py::test_local_health_and_running_workload_version PASSED [ 50%]
+tests/integration/test_observability.py::test_native_metrics_are_loopback_only_and_count_queries PASSED [100%]
+
+======================= 2 passed, 8 deselected in 43.23s =======================
+  integration: OK (43.47=setup[0.02]+cmd[43.45] seconds)
+  congratulations :) (43.50 seconds)

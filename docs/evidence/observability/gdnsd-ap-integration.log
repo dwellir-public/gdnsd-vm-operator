@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.9, pytest-9.2.0, pluggy-1.7.0 -- /home/erik/dwellir-charm-registry/INFRA/gdnsd-vm-operator/.tox/integration/bin/python
+cachedir: .pytest_cache
+rootdir: /home/erik/dwellir-charm-registry/INFRA/gdnsd-vm-operator
+configfile: pyproject.toml
+collecting ... collected 2 items
+
+tests/integration/test_observability.py::test_native_metrics_are_loopback_only_and_count_queries PASSED [ 50%]
+tests/integration/test_live.py::test_local_health_and_running_workload_version PASSED [100%]
+
+========================= 2 passed in 66.09s (0:01:06) =========================

@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import logging
 import re
+import subprocess
 from functools import cached_property
 
 import ops
+from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 
+from observability import Exporter, LeaderProvider, payload
 from workload import ZONE_PATTERN, Workload, WorkloadError
 
 logger = logging.getLogger(__name__)
@@ -21,7 +24,14 @@ class GdnsdCharm(ops.CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-        self._stored.set_default(geoip_url="", config_errors={})
+        self._stored.set_default(geoip_url="", config_errors={}, exporter_error="")
+        self.observability = LeaderProvider(
+            self,
+            payload_factory=lambda: payload(self),
+            refresh_events=[self.on.config_changed, self.on.upgrade_charm, self.on.leader_elected],
+        )
+        self.dashboards = GrafanaDashboardProvider(self)
+        self.framework.observe(self.on.upgrade_charm, self._on_exporter_refresh)
         self.framework.observe(self.on.install, self._on_install)
         for event in (self.on.upgrade_charm, self.on.update_status, self.on.config_changed):
             self.framework.observe(event, self._on_observe)
@@ -49,12 +59,22 @@ class GdnsdCharm(ops.CharmBase):
             if binding is None or binding.network.bind_address is None:
                 raise WorkloadError("No private address is available for gdnsd")
             self.workload.install(str(binding.network.bind_address))
+            Exporter().reconcile()
             self.unit.open_port("tcp", 53)
             self.unit.open_port("udp", 53)
             self._observe_status()
-        except (WorkloadError, ValueError) as exc:
+        except (WorkloadError, ValueError, OSError, subprocess.SubprocessError) as exc:
             logger.exception("gdnsd installation failed")
             self.unit.status = ops.BlockedStatus(str(exc))
+
+    def _on_exporter_refresh(self, event: ops.HookEvent) -> None:
+        """Refresh only the auxiliary exporter, preserving the DNS process."""
+        try:
+            Exporter().reconcile()
+            self._stored.exporter_error = ""
+        except (OSError, subprocess.SubprocessError):
+            logger.exception("Unable to reconcile gdnsd exporter")
+            self._stored.exporter_error = "DNS exporter installation failed; see logs"
 
     def _on_observe(self, event: ops.HookEvent) -> None:
         """Observe service health without changing host files or service state."""
@@ -89,6 +109,8 @@ class GdnsdCharm(ops.CharmBase):
                 else f"Supply a valid configuration for {key[:100]}; see action logs"
             )
             self.unit.status = ops.WaitingStatus(self._with_geoip_summary(message, summary))
+        elif self._stored.exporter_error:
+            self.unit.status = ops.WaitingStatus(self._stored.exporter_error)
         elif request_error:
             self.unit.status = ops.WaitingStatus(
                 self._with_geoip_summary(

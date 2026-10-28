@@ -11,8 +11,8 @@ Installation checks the package's actual dpkg status. It adopts an existing
 installation without changing files or restarting the service. A fresh install
 uses Ubuntu's APT package and configures listeners for localhost and the Juju
 private address. The workload keeps upstream paths and the `gdnsd.service` unit.
-Only the install event may install a missing package. Charm refresh,
-config-changed and update-status observe service state. They do not install,
+Only the install event may install a missing package. Charm refresh reconciles the auxiliary exporter and observes DNS service state.
+Config-changed and update-status observe service state. They do not install,
 upgrade, restart or rewrite workload files. An explicitly stopped service stays
 stopped until an operator starts it. There is no workload-upgrade feature.
 
@@ -90,3 +90,26 @@ under explicit authorization. They reuse existing resources, so adding them
 requires no global config change. Public n delegation and glue still point
 only to production. The n-zone guard is restored after authorized test-copy
 updates.
+
+## Observability
+
+`src/exporter.py` is a stdlib HTTP exporter for the installed daemon's
+`gdnsdctl -t 5 -o stats` output. Its subprocess has a six-second timeout, within
+the collector's ten-second scrape timeout. It validates native nonnegative
+integer counters before exposing any native sample. Collection failure exposes
+only `gdnsd_scrape_success 0`, and logs the exception. It never changes DNS state.
+
+`src/observability.py` owns the auxiliary systemd unit and installed exporter
+script. The service runs as gdnsd, binds to loopback and reads gdnsd's private
+control socket. Install and charm refresh reconcile this service only.
+Update-status does not write host files or restart either service.
+
+The vendored v3 library publishes an application-wide declaration. A local
+leader guard prevents nonleaders from writing the application databag. Leadership
+changes republish the declaration. All units declare the same local endpoint
+and journals. The compatible Alloy collector obtains the actual colocated
+principal unit from juju-info before considering the payload topology fallback.
+This preserves per-unit source labels even for a multiunit application.
+The payload contains no alert artifacts. Grafana dashboards use the separate
+Grafana relation. Library origins and hashes are recorded in
+[the implementation plan](docs/plans/native-observability.md).
