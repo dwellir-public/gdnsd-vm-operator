@@ -10,7 +10,11 @@ Never add workload-upgrade behavior or source compilation. Use Ubuntu's signed
 APT repositories for initial installation and preserve existing installations.
 Refresh must preserve configuration, the running process and package version.
 
-n.dwellir.com is off limits. Preserve existing n files and all production DNS.
+Production n.dwellir.com is off limits. Its delegation, glue, records and source
+GSLB configuration must remain unchanged. Direct-only n test copies exist on
+the four authorized hyperborea gdnsd models. Update those copies only when
+explicitly requested, then restore the charm n-zone guard. Never register or
+delegate production n to these test servers.
 x.dwellir.com is the retained experiment's writable test zone. Parent dwellir.com
 DNS changes require its separate DNSControl repository. Tests require explicit
 controller-qualified model input and must retain caller-owned models and apps.

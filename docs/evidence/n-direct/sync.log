@@ -1,0 +1,9 @@
+source zone 37f0d33b61da19ee0a78bcc838436b0a3d3a57c965b02b79c1e03b8b725f9ed8
+us n protection restored
+ap n protection restored
+us synchronized {'changed': False, 'return-code': 0, 'sha256': '37f0d33b61da19ee0a78bcc838436b0a3d3a57c965b02b79c1e03b8b725f9ed8', 'validated': False}
+nl n protection restored
+ap synchronized {'changed': False, 'return-code': 0, 'sha256': '37f0d33b61da19ee0a78bcc838436b0a3d3a57c965b02b79c1e03b8b725f9ed8', 'validated': False}
+nl synchronized {'changed': True, 'return-code': 0, 'sha256': 'b6b27a700eff42b0210157de6fd2496b310ef8a8d105e45a84f4981866f72a38', 'validated': True}
+us-west n protection restored
+us-west synchronized {'changed': True, 'return-code': 0, 'sha256': 'b6b27a700eff42b0210157de6fd2496b310ef8a8d105e45a84f4981866f72a38', 'validated': True}

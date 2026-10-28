@@ -83,6 +83,10 @@ configuration errors across hooks and refreshes. Failed configuration requests
 produce waiting status until a matching valid candidate resolves the problem.
 Healthy status observations do not clear that record.
 
-For this experiment, n is protected, x is writable, and parent dwellir.com
-changes must use the DNSControl repository. Fresh Frankfurt and US West instances receive
-only x test data. The existing n test copies stay on US/Tokyo unchanged.
+For this experiment, production n is unchanged, x is writable, and parent
+dwellir.com changes must use the DNSControl repository. All four test servers
+now hold direct-only n copies, created or confirmed from the original source
+under explicit authorization. They reuse existing resources, so adding them
+requires no global config change. Public n delegation and glue still point
+only to production. The n-zone guard is restored after authorized test-copy
+updates.

@@ -112,9 +112,13 @@ UDP/TCP port 53. Fresh installations bind localhost and the unit's private IP;
 existing listener configuration is preserved. Supply a zone before expecting
 useful public answers. Configure delegation separately in the parent zone.
 
-For the Dwellir experiment, `x.dwellir.com` is writable. `n.dwellir.com` is
-protected by the charm's `protected-zones` setting and must remain unchanged.
-Do not change its production records, delegation or Aloha configuration.
+For the Dwellir experiment, `x.dwellir.com` is writable. Production
+`n.dwellir.com` records, delegation and Aloha configuration must remain unchanged.
+The four gdnsd servers also hold isolated n copies for direct-IP queries only.
+Their n zones remain protected by default; an explicitly authorized test-copy
+sync temporarily relaxes the guard and restores it afterward. These copies are
+not registered or delegated in public DNS. See
+[the direct-copy validation](docs/validation-n-direct.md).
 Every change to the parent `dwellir.com` zone must use the separate
 [dwellir-dns repository](https://github.com/dwellir-public/dwellir-dns).
 

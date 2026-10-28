@@ -1,0 +1,20 @@
+[
+  {
+    "action": "validate-config",
+    "result": {
+      "changed": false,
+      "return-code": 0,
+      "sha256": "37f0d33b61da19ee0a78bcc838436b0a3d3a57c965b02b79c1e03b8b725f9ed8",
+      "validated": true
+    }
+  },
+  {
+    "action": "apply-config",
+    "result": {
+      "changed": false,
+      "return-code": 0,
+      "sha256": "37f0d33b61da19ee0a78bcc838436b0a3d3a57c965b02b79c1e03b8b725f9ed8",
+      "validated": false
+    }
+  }
+]

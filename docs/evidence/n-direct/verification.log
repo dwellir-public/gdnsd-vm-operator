@@ -1,0 +1,2 @@
+PASS: 3240 direct queries, 403 source owners plus NS/SOA, four servers, UDP/TCP, AA and source TTLs
+Queries needing timeout retry: 9
