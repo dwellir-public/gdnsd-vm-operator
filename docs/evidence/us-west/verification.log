@@ -1,0 +1,2 @@
+Retried query count: 5
+PASS: 3248 queries, all 403 imported owners plus NS and ns3/ns4 A on selected authorities over UDP/TCP, AA and TTL60

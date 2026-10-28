@@ -209,3 +209,6 @@ See the latest [compressed GeoIP upgrade validation](docs/validation-compressed-
 
 - [gdnsd control commands](https://github.com/gdnsd/gdnsd/blob/v3.8.2/docs/gdnsdctl.podin)
 - [Ubuntu Noble gdnsd package](https://packages.ubuntu.com/noble/net/gdnsd)
+
+US West deployment and the large configuration read repair are recorded in
+[docs/validation-us-west.md](docs/validation-us-west.md).

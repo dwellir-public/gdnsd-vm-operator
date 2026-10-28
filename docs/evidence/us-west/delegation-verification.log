@@ -1,0 +1,8 @@
+ns-1309.awsdns-35.org. PASS delegation and glue TTL60
+ns-1746.awsdns-26.co.uk. PASS delegation and glue TTL60
+ns-cloud-a1.googledomains.com. PASS delegation and glue TTL60
+ns-cloud-a2.googledomains.com. PASS delegation and glue TTL60
+1.1.1.1 ns4.x.dwellir.com PASS
+1.1.1.1 api-ajuna-polkadot.x.dwellir.com PASS
+8.8.8.8 ns4.x.dwellir.com PASS
+8.8.8.8 api-ajuna-polkadot.x.dwellir.com PASS

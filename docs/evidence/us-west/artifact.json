@@ -1,0 +1,9 @@
+{
+  "runtime_source_commit": "86b583f09bb8a26bb4f9ddb84d956f50128c5da2",
+  "artifact_sha256": "4f6626da0b134c55f80ffe3c6389051a4122fc2bbcd90fa3b7cae727b8f26d73",
+  "artifact": "gdnsd-vm_ubuntu@24.04-amd64.charm",
+  "base": "ubuntu@24.04",
+  "arch": "amd64",
+  "unit_tests": 162,
+  "live_read_health_checks": 8
+}

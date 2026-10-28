@@ -47,6 +47,9 @@ protected-zone checks and rollback then use the normalized file.
 
 Persistent configuration uses `/etc/gdnsd/config` and `/etc/gdnsd/zones/<zone>`.
 Each read supplies a SHA-256 conflict token. A missing zone uses `absent`.
+Large reads send base64 in separate 64 KiB action result fields, with a part
+count. The CLI reassembles and verifies the digest before writing, avoiding
+Linux process-argument limits without changing stored configuration.
 Actions hold a local transaction lock, stage the complete configuration tree,
 validate with the installed gdnsd, and recheck the selected live file before
 atomic replacement. Staging and backups live under `/var/lib/gdnsd-vm`.
@@ -81,5 +84,5 @@ produce waiting status until a matching valid candidate resolves the problem.
 Healthy status observations do not clear that record.
 
 For this experiment, n is protected, x is writable, and parent dwellir.com
-changes must use the DNSControl repository. A fresh Frankfurt instance receives
+changes must use the DNSControl repository. Fresh Frankfurt and US West instances receive
 only x test data. The existing n test copies stay on US/Tokyo unchanged.
