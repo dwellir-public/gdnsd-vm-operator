@@ -116,10 +116,9 @@ UDP/TCP port 53. Fresh installations bind localhost and the unit's private IP;
 existing listener configuration is preserved. Supply a zone before expecting
 useful public answers. Configure delegation separately in the parent zone.
 
-Use `protected-zones` to prevent actions from changing selected zones or their
-children. Global configuration and shared GeoIP changes can affect every served
-zone, so assess those effects before applying them. Manage parent-zone records
-and delegation through your normal DNS management process.
+Zone actions accept any valid zone name. Global configuration and shared GeoIP
+changes can affect every served zone. Manage parent-zone records and delegation
+through your normal DNS management process.
 
 ## Update the GeoIP database
 
@@ -164,8 +163,7 @@ the waiting state until the matching configuration problem is resolved. A real
 service health failure takes priority and reports `blocked`. Correcting another
 zone or restarting the service does not hide an unresolved configuration error.
 
-The database is shared by configured GeoIP resources. The action refuses a
-replacement when a protected zone file is present. Database replacement can
+The database is shared by configured GeoIP resources. Database replacement can
 affect every zone using those resources.
 
 ## Local health and workload version

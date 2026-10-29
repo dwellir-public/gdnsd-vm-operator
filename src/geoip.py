@@ -268,20 +268,6 @@ def validate_candidate(workload, database: Path, download: Path) -> None:
         workload.command(["gdnsd", "-c", str(candidate), "checkconf"])
 
 
-def check_protected_zones(workload) -> None:
-    """Refuse shared database changes for protected names and descendants."""
-    zones = workload.config_dir / "zones"
-    if not zones.is_dir():
-        return
-    protected = {name.lower().rstrip(".") for name in workload.protected_zones}
-    for entry in zones.iterdir():
-        name = entry.name.lower().rstrip(".")
-        if any(name == zone or name.endswith("." + zone) for zone in protected):
-            raise WorkloadError(
-                f"GeoIP replacement would affect protected zone {name}; use an isolated model"
-            )
-
-
 def sync_database(workload, url: str, expected_sha256: str = "") -> dict:
     """Install a verified database and restore it if gdnsd cannot activate it."""
     validate_url(url)
@@ -290,7 +276,6 @@ def sync_database(workload, url: str, expected_sha256: str = "") -> dict:
     database = workload.config_dir / "geoip/GeoLite2-City.mmdb"
     if database.is_symlink() or database.parent.is_symlink():
         raise WorkloadError("GeoIP database path must not be a symlink")
-    check_protected_zones(workload)
     workload.state_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="geoip-download-", dir=workload.state_dir) as directory:
         artifact = Path(directory) / "database.download"
@@ -302,7 +287,6 @@ def sync_database(workload, url: str, expected_sha256: str = "") -> dict:
         digest = payload["sha256"]
         metadata = validate_database(downloaded)
         with workload._lock():
-            check_protected_zones(workload)
             before = database.read_bytes() if database.exists() else None
             if before is not None and hashlib.sha256(before).hexdigest() == digest:
                 return {

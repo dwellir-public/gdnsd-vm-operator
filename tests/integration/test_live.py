@@ -3,6 +3,7 @@
 import base64
 import os
 import re
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -40,19 +41,28 @@ def action(juju, app, name, params):
     return results
 
 
-def protected_hash(juju, app):
-    """Inspect an existing protected file without creating or editing it."""
-    return juju.ssh(
-        f"{app}/0",
-        "if sudo test -f /etc/gdnsd/zones/n.dwellir.com; then "
-        "sudo sha256sum /etc/gdnsd/zones/n.dwellir.com; else echo absent; fi",
-    )
+def unrelated_zone_hashes(juju, app):
+    """Inspect unselected zones and reject indirection or incomplete inspection."""
+    script = """
+import hashlib
+from pathlib import Path
+lines = []
+for path in sorted(Path('/etc/gdnsd/zones').iterdir()):
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError('lab zone directory contains an indirect or non-file entry')
+    if path.name != 'x.dwellir.com':
+        with path.open('rb') as stream:
+            digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+        lines.append(digest + '  ' + path.name)
+print('\\n'.join(lines))
+"""
+    return juju.ssh(f"{app}/0", "sudo python3 -c " + shlex.quote(script))
 
 
 def test_zone_roundtrip_validation_and_conflicts(target):
     """Accept a valid x update and reject invalid or stale candidates."""
     juju, app, _ = target
-    before_n = protected_hash(juju, app)
+    before_other_zones = unrelated_zone_hashes(juju, app)
     old = action(juju, app, "get-config", {"scope": "zone", "zone": "x.dwellir.com"})
     content = base64.b64decode(old["content-b64"]).decode()
     if not old["exists"]:
@@ -94,7 +104,7 @@ def test_zone_roundtrip_validation_and_conflicts(target):
     with pytest.raises(jubilant.TaskError):
         action(juju, app, "apply-config", bad)
     assert action(juju, app, "get-config", {"zone": "x.dwellir.com"}) == current
-    assert protected_hash(juju, app) == before_n
+    assert unrelated_zone_hashes(juju, app) == before_other_zones
     assert "192.0.2.201" in juju.ssh(
         f"{app}/0", "dig @127.0.0.1 charm-check.x.dwellir.com A +short"
     )
@@ -151,11 +161,11 @@ def test_script_pull_validate_push(target, tmp_path):
 
 
 def test_global_configuration_handoff_only_on_fresh_model(target):
-    """Change a harmless global option only where no protected n copy exists."""
+    """Change a harmless global option only on a dedicated lab unit."""
     if os.environ.get("GDNSD_TEST_GLOBAL") != "1":
         pytest.skip("global configuration testing requires GDNSD_TEST_GLOBAL=1")
     juju, app, _ = target
-    assert protected_hash(juju, app).strip() == "absent"
+    assert not unrelated_zone_hashes(juju, app).strip(), "use a dedicated lab unit"
     old = action(juju, app, "get-config", {"scope": "global"})
     content = base64.b64decode(old["content-b64"]).decode() + "\n# integration config handoff\n"
     old_pid = juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID")
@@ -211,11 +221,11 @@ def test_local_health_and_running_workload_version(target):
 
 
 def test_health_reports_stopped_and_recovers_only_on_fresh_model(target):
-    """Stop and restore only the fresh test service, leaving retained n copies alone."""
+    """Stop and restore only an explicitly opted-in dedicated lab service."""
     if os.environ.get("GDNSD_TEST_GLOBAL") != "1":
-        pytest.skip("service-stop check is limited to the fresh model without n")
+        pytest.skip("service-stop check requires a dedicated lab model")
     juju, app, _ = target
-    assert protected_hash(juju, app).strip() == "absent"
+    assert not unrelated_zone_hashes(juju, app).strip(), "use a dedicated lab unit"
     try:
         result = action(juju, app, "service", {"action": "stop"})
         assert not result["active"]
@@ -233,11 +243,11 @@ def test_health_reports_stopped_and_recovers_only_on_fresh_model(target):
 
 
 def test_geoip_sync_remembers_url_and_preserves_valid_data_on_failure(target):
-    """Exercise URL reuse, database activation and waiting/recovery on Frankfurt only."""
+    """Exercise URL reuse, validation and recovery on an opted-in lab unit."""
     if os.environ.get("GDNSD_TEST_GEOIP") != "1":
         pytest.skip("GeoIP replacement requires GDNSD_TEST_GEOIP=1 on the fresh model")
     juju, app, artifact = target
-    assert protected_hash(juju, app).strip() == "absent"
+    assert not unrelated_zone_hashes(juju, app).strip(), "use a dedicated lab unit"
     import json
 
     provenance = json.loads((Path(__file__).parents[1] / "data/provenance.json").read_text())
@@ -277,7 +287,7 @@ def test_geoip_sync_remembers_url_and_preserves_valid_data_on_failure(target):
         lambda s: jubilant.all_active(s, app) and jubilant.all_agents_idle(s, app), timeout=600
     )
     assert action(juju, app, "sync-geoip", {})["url"] == url
-    assert protected_hash(juju, app).strip() == "absent"
+    assert not unrelated_zone_hashes(juju, app).strip(), "use a dedicated lab unit"
 
 
 def test_compressed_geoip_operator_download(target, tmp_path):
@@ -288,7 +298,7 @@ def test_compressed_geoip_operator_download(target, tmp_path):
     if os.environ.get("GDNSD_TEST_GEOIP") != "1":
         pytest.fail("compressed database test requires explicit GDNSD_TEST_GEOIP=1")
     juju, app, _ = target
-    assert protected_hash(juju, app).strip() == "absent"
+    assert not unrelated_zone_hashes(juju, app).strip(), "use a dedicated lab unit"
     # A single always-up x resource ensures native gdnsd actually uses this DB.
     current = action(juju, app, "get-config", {"scope": "global"})
     config = base64.b64decode(current["content-b64"]).decode()
@@ -380,7 +390,7 @@ plugins => {
     reused = action(juju, app, "sync-geoip", {})
     assert reused["url"] == url and not reused["changed"]
     assert juju.ssh(f"{app}/0", "systemctl show gdnsd.service --property MainPID") == after_pid
-    assert protected_hash(juju, app).strip() == "absent"
+    assert not unrelated_zone_hashes(juju, app).strip(), "use a dedicated lab unit"
     # Keep the private share token out of portable evidence and version control.
     import json
 
@@ -400,7 +410,7 @@ def test_full_global_config_read(target, tmp_path):
     import hashlib
 
     juju, app, _ = target
-    before_n = protected_hash(juju, app)
+    before_other_zones = unrelated_zone_hashes(juju, app)
     expected = juju.ssh(f"{app}/0", "sudo sha256sum /etc/gdnsd/config").split()[0]
     root = Path(__file__).resolve().parents[2]
     output = tmp_path / "global.config"
@@ -421,4 +431,4 @@ def test_full_global_config_read(target, tmp_path):
         text=True,
     )
     assert hashlib.sha256(output.read_bytes()).hexdigest() == expected
-    assert protected_hash(juju, app) == before_n
+    assert unrelated_zone_hashes(juju, app) == before_other_zones

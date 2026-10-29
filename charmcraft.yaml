@@ -11,12 +11,6 @@ parts:
     plugin: uv
     source: .
     build-snaps: [astral-uv]
-config:
-  options:
-    protected-zones:
-      type: string
-      default: n.dwellir.com
-      description: Comma- or whitespace-separated zone names that actions cannot modify.
 actions:
   get-config:
     description: Read a zone or the global configuration with its SHA-256 digest.

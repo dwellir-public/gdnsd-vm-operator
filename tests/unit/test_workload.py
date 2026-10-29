@@ -17,7 +17,7 @@ def instance(tmp_path):
     (config / "zones").mkdir(parents=True)
     (config / "config").write_text("options => {}\n")
     (config / "zones" / "x.example.com").write_text("old zone\n")
-    (config / "zones" / "n.dwellir.com").write_text("protected\n")
+    (config / "zones" / "n.dwellir.com").write_text("existing zone\n")
     calls = []
 
     def command(argv):
@@ -37,7 +37,7 @@ def test_selected_zone_update_preserves_other_files(instance):
     result = work.update("zone", "x.example.com", encode("new zone\n"), previous["sha256"])
     assert result["changed"]
     assert work.read("zone", "x.example.com")["content-b64"] == encode("new zone\n")
-    assert (work.config_dir / "zones/n.dwellir.com").read_text() == "protected\n"
+    assert (work.config_dir / "zones/n.dwellir.com").read_text() == "existing zone\n"
     assert (work.config_dir / "config").read_text() == "options => {}\n"
     assert ["gdnsdctl", "reload-zones"] in calls
     assert ["gdnsdctl", "replace"] not in calls
@@ -67,13 +67,18 @@ def test_stale_push_is_rejected_before_validation(instance):
     assert not calls
 
 
-def test_protected_zone_is_not_writable(instance):
+@pytest.mark.parametrize("zone", ["n.dwellir.com", "child.n.dwellir.com", "example.org"])
+def test_any_valid_zone_can_be_updated(instance, zone):
+    """Previously special zone names and their children use normal transactions."""
     work, calls = instance
-    old = work.read("zone", "n.dwellir.com")
-    with pytest.raises(WorkloadError, match="protected"):
-        work.update("zone", "n.dwellir.com", encode("new"), old["sha256"])
-    assert not calls
-    assert work.read("zone", "n.dwellir.com") == old
+    (work.config_dir / "zones/n.dwellir.com").unlink(missing_ok=True)
+    path = work.config_dir / "zones" / zone
+    path.write_text("old zone\n")
+    old = work.read("zone", zone)
+    result = work.update("zone", zone, encode("new zone\n"), old["sha256"])
+    assert result["changed"] and result["validated"]
+    assert path.read_text() == "new zone\n"
+    assert ["gdnsdctl", "reload-zones"] in calls
 
 
 def test_validate_only_does_not_apply(instance):

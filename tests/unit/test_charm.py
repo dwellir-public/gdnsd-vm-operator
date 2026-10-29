@@ -1,9 +1,11 @@
 """Exercise Juju lifecycle and action contracts without host mutations."""
 
+from pathlib import Path
 from unittest.mock import patch
 
 import ops
 import pytest
+import yaml
 from ops.testing import Address, BindAddress, Context, Network, State
 
 from charm import GdnsdCharm
@@ -62,7 +64,7 @@ def test_reconciliation_only_observes_service(ctx, workload, event, active):
         "workload-version": "3.8.2",
     }
     state = ctx.run(getattr(ctx.on, event)(), State())
-    factory.assert_called_once_with(protected_zones={"n.dwellir.com"})
+    factory.assert_called_once_with()
     host.health.assert_called_once_with()
     host.is_active.assert_not_called()
     host.install.assert_not_called()
@@ -71,15 +73,10 @@ def test_reconciliation_only_observes_service(ctx, workload, event, active):
     assert isinstance(state.unit_status, ops.ActiveStatus if active else ops.BlockedStatus)
 
 
-def test_config_reconciles_protected_names_without_workload_writes(ctx, workload):
-    factory, host = workload
-    ctx.run(
-        ctx.on.config_changed(),
-        State(config={"protected-zones": " N.DWELLIR.COM., example.org  second.org "}),
-    )
-    factory.assert_called_once_with(protected_zones={"n.dwellir.com", "example.org", "second.org"})
-    host.update.assert_not_called()
-    host.install.assert_not_called()
+def test_charm_has_no_zone_protection_setting():
+    """The charm exposes no domain-specific protection configuration."""
+    metadata = yaml.safe_load(Path("charmcraft.yaml").read_text())
+    assert "protected-zones" not in metadata.get("config", {}).get("options", {})
 
 
 def test_get_config_returns_content_and_digest(ctx, workload):
@@ -164,8 +161,8 @@ def test_workload_error_is_a_clean_action_failure(ctx, workload):
     from workload import WorkloadError
 
     _, host = workload
-    host.read.side_effect = WorkloadError("zone is protected")
-    with pytest.raises(ops.testing.ActionFailed, match="zone is protected") as result:
+    host.read.side_effect = WorkloadError("cannot read zone")
+    with pytest.raises(ops.testing.ActionFailed, match="cannot read zone") as result:
         ctx.run(
             ctx.on.action("get-config", params={"zone": "example.org"}),
             State(unit_status=ops.ActiveStatus()),

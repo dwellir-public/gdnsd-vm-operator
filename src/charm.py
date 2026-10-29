@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import re
 import subprocess
 from functools import cached_property
 
@@ -47,10 +46,8 @@ class GdnsdCharm(ops.CharmBase):
 
     @cached_property
     def workload(self) -> Workload:
-        """Build a workload helper using the current zone protection policy."""
-        names = re.split(r"[\s,]+", str(self.config["protected-zones"]))
-        protected = {name.lower().rstrip(".") for name in names if name}
-        return Workload(protected_zones=protected)
+        """Build the native workload helper."""
+        return Workload()
 
     def _on_install(self, event: ops.InstallEvent) -> None:
         """Install or adopt gdnsd and expose its DNS listener ports."""

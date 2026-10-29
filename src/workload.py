@@ -91,14 +91,12 @@ class Workload:
         config_dir: Path = Path("/etc/gdnsd"),
         state_dir: Path = Path("/var/lib/gdnsd-vm"),
         command: Callable[[list[str]], str] = run_command,
-        protected_zones: set[str] | None = None,
         probe: Callable[[], None] = probe_local_dns,
     ):
         self.config_dir = config_dir
         self.state_dir = state_dir
         self.command = command
         self.probe = probe
-        self.protected_zones = {"n.dwellir.com"} if protected_zones is None else protected_zones
 
     def _path(self, scope: str, zone: str) -> Path:
         """Resolve an exact configuration target and reject indirect paths."""
@@ -189,10 +187,6 @@ class Workload:
     ) -> dict:
         """Validate and optionally apply one file, restoring it on failure."""
         path = self._path(scope, zone)
-        if scope == "zone" and any(
-            zone == p or zone.endswith("." + p) for p in self.protected_zones
-        ):
-            raise WorkloadError(f"zone {zone} is protected")
         if len(content_b64) > (MAX_CONTENT * 4 // 3) + 8:
             raise WorkloadError("configuration exceeds the 2 MiB action limit")
         try:

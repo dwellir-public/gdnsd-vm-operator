@@ -18,7 +18,7 @@ def setup(tmp_path, monkeypatch):
     (directory / "zones").mkdir(parents=True)
     (directory / "geoip").mkdir()
     (directory / "config").write_text("options => {}\n")
-    (directory / "zones" / "n.dwellir.com").write_text("protected\n")
+    (directory / "zones" / "n.dwellir.com").write_text("existing zone\n")
     database = directory / "geoip/GeoLite2-City.mmdb"
     database.write_bytes(b"previous database")
     calls = []
@@ -37,7 +37,6 @@ def setup(tmp_path, monkeypatch):
             config_dir=directory,
             state_dir=tmp_path / "state",
             command=command,
-            protected_zones=set(),
         ),
         database,
         calls,
@@ -51,7 +50,7 @@ def test_download_validates_installs_and_replaces_daemon(setup):
     assert result["changed"] and result["database-type"] == "GeoIP2-City"
     assert result["sha256"] == hashlib.sha256(FIXTURE.read_bytes()).hexdigest()
     assert ["gdnsdctl", "replace"] in calls
-    assert (work.config_dir / "zones/n.dwellir.com").read_text() == "protected\n"
+    assert (work.config_dir / "zones/n.dwellir.com").read_text() == "existing zone\n"
 
 
 def test_invalid_mmdb_preserves_old_database(setup, monkeypatch):
@@ -149,25 +148,20 @@ def test_rejects_non_http_downloads(setup, url):
     assert not calls
 
 
-def test_shared_protected_zone_prevents_database_change(setup):
-    work, database, calls = setup
-    work.protected_zones = {"n.dwellir.com"}
-    with pytest.raises(WorkloadError, match="protected zone"):
-        work.sync_geoip("https://example.com/city.mmdb")
-    assert database.read_bytes() == b"previous database"
-    assert not calls
-
-
-@pytest.mark.parametrize("name", ["N.Dwellir.Com.", "n.dwellir.com.", "sub.n.dwellir.com"])
-def test_protected_equivalent_or_child_zone_prevents_database_change(setup, name):
+@pytest.mark.parametrize(
+    "name", ["n.dwellir.com", "N.Dwellir.Com.", "n.dwellir.com.", "sub.n.dwellir.com"]
+)
+def test_existing_zones_do_not_block_database_updates(setup, name):
+    """Database validation and activation work regardless of served zone names."""
     work, database, calls = setup
     (work.config_dir / "zones/n.dwellir.com").unlink()
-    (work.config_dir / "zones" / name).write_text("protected")
-    work.protected_zones = {"n.dwellir.com"}
-    with pytest.raises(WorkloadError, match="protected zone"):
-        work.sync_geoip("https://example.com/city.mmdb")
-    assert database.read_bytes() == b"previous database"
-    assert not calls
+    path = work.config_dir / "zones" / name
+    path.write_text("existing zone\n")
+    result = work.sync_geoip("https://example.com/city.mmdb")
+    assert result["changed"] and result["validated"]
+    assert database.read_bytes() == FIXTURE.read_bytes()
+    assert path.read_text() == "existing zone\n"
+    assert ["gdnsdctl", "replace"] in calls
 
 
 def test_installed_database_metadata_has_utc_build_time(setup):

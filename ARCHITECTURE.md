@@ -41,7 +41,7 @@ stdlib parser can process extension metadata. No archive path is extracted to
 the filesystem; only one selected regular MMDB is copied to a fixed staging path.
 Checksum input verifies the transport artifact, while action results distinguish
 its hash from the installed MMDB hash. Native validation, atomic application,
-protected-zone checks and rollback then use the normalized file.
+and rollback then use the normalized file.
 
 ## Configuration transactions
 
@@ -59,9 +59,9 @@ state directory in normal host backups and manage its retention.
 A zone update calls `gdnsdctl reload-zones`; a global configuration update calls
 `gdnsdctl replace`, which hands service to a process using the same binary.
 These operations can read all zones, but only the selected file is written.
-Protected zones and their children cannot be updated through zone actions.
-The protection setting does not isolate global plugin resources: an operator
-must assess their effect on all zones before changing shared resources.
+Zone actions use the same validation and transaction checks for every valid
+zone name. Global plugin resources and GeoIP databases can affect all served
+zones when changed.
 
 Validation failures leave live files unchanged. Application failures restore
 the old file and attempt reapplication. Both application and rollback failures
