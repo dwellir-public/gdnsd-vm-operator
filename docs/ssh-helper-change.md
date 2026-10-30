@@ -12,7 +12,7 @@ or credential management is included.
 | Transaction lock, candidate validation, ownership, backups and rollback, existing `workload.py` | task-required / preservation | Present for single files | Reuse native helpers for multi-file SSH transaction | PASS locally; live validation conditional | Conflict, bridge-stage, invalid-native, rollback, partial-rollback and lock-held tests pass |
 | Observe external deployment errors and repaired action errors, approved contract | task-required / capability | PARTIAL, only charm-local action errors | Add shared deployment checkpoint and status integration | PASS locally | SSH failure/repair and later action-error invalidation tests pass; GeoIP tests remain passing |
 | Root-owned stable stdlib helper, approved contract | task-required / capability | GAP | Install copied source and isolated system-Python launcher on install/upgrade | PASS locally; real ownership conditional | Installation test checks requested uid/gid/modes; isolated system Python with site packages disabled imports helper |
-| Module boundaries and `uv run tox -e lint,unit`, [AGENTS.md](../AGENTS.md) | repository-required / repository | Existing workload/charm split | Preserve split and dependency lock | PASS | Full lint and unit suite passes, 215 tests; dependency definitions unchanged |
+| Module boundaries and `uv run tox -e lint,unit`, [AGENTS.md](../AGENTS.md) | repository-required / repository | Existing workload/charm split | Preserve split and dependency lock | PASS | Full lint and unit suite passes, 218 tests; dependency definitions unchanged |
 | Preserve package/configuration/GeoIP/PID on refresh, [AGENTS.md](../AGENTS.md) | repository-required / preservation | Existing constraint | Add helper files without DNS activation on refresh | Static/local PASS; live UNKNOWN | Refresh event tests make no workload install/update/service calls; retained-model preservation check belongs to integration owner |
 | Explicit retained nonproduction target, [AGENTS.md](../AGENTS.md) | repository-required / integration | Integration target not inspected in this implementation task | Defer live execution to parent operator task | Conditional | No live commands executed by this implementation agent |
 | Built local artifact with pytest/Jubilant, skill DEPLOY-001 | required-baseline / integration | UNKNOWN for new capability | Defer build/live verification to parent operator task | Conditional | Not executed here; unit tests do not establish native daemon or SSH behavior |
@@ -22,7 +22,7 @@ and relations. Live artifact, restricted SSH, refresh preservation and release
 checks remain assigned to the operator task. Unrelated baseline areas were not
 assessed. No additional decisions are needed for these dispositions.
 
-Local verification: `uv run tox -e lint,unit` passed with 215 unit tests. TDD red
+Local verification: `uv run tox -e lint,unit` passed with 218 unit tests. TDD red
 runs first established the missing helper, missing charm lifecycle/status wiring,
 missing checkpoint aliases and failure handling. Follow-up tests cover request
 boundaries and existing transaction protections. `git diff --check` is the final
@@ -37,4 +37,11 @@ validate/apply, scoped SSH error clearing, persistent rollback-recovery markers
 and action-outcome writes under the original native transaction lock. Red tests
 reproduced stale identity acceptance, unrelated error clearing, no-op rollback
 uncertainty clearing and missing in-transaction action bookkeeping. Full lint and
-unit verification passes with 215 tests after these corrections.
+unit verification passes with 218 tests after these corrections.
+
+
+Follow-up recovery review adds regression coverage for unchanged uncertain global
+configuration bundled with changed zones, action rollback failures entering
+shared recovery state, and alternate base64 encodings of unchanged action data.
+Global recovery cannot be cleared by zone-only activation. Identical action data
+is recognized by its decoded digest before allowing no-op completion.

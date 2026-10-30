@@ -187,6 +187,16 @@ class Manager:
             raise WorkloadError("remote file changed since snapshot; pull again")
         checksums = {name: hashlib.sha256(content).hexdigest() for name, content in data.items()}
         changed = [name for name in data if checksums[name] != expected[name]]
+        recovery = set(data) & set(work.deployment_state().get("recovery-required", []))
+        if (
+            not validate_only
+            and "config" in recovery
+            and "config" not in changed
+            and (bridge is None or bridge == base64.b64decode(before["config"]["content-b64"]))
+        ):
+            raise WorkloadError(
+                "recovery required for global activation; zone reloads cannot repair it"
+            )
         if not changed and not validate_only:
             if set(data) & set(work.deployment_state().get("recovery-required", [])):
                 raise WorkloadError(

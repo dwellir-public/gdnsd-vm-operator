@@ -191,23 +191,22 @@ class Workload:
             try:
                 self._path(scope, zone)
                 name = "config" if scope == "global" else f"zones/{zone}"
-                state = self.deployment_state()
-                if (
-                    not validate_only
-                    and name in state.get("recovery-required", [])
-                    and self.read(scope, zone)["content-b64"] == content_b64
-                ):
-                    raise WorkloadError(
-                        "recovery required after failed rollback; no-op cannot repair activation"
-                    )
                 result = self._update_locked(
                     scope, zone, content_b64, expected_sha256, validate_only
                 )
                 if not validate_only:
                     self._configuration_succeeded_locked(key)
                 return result
-            except (WorkloadError, ValueError, OSError):
+            except (WorkloadError, ValueError, OSError) as exc:
                 self._configuration_failed_locked(key)
+                if "rollback failed" in str(exc):
+                    state = self.deployment_state()
+                    state["error"] = str(exc)
+                    state["error-files"] = sorted(set(state.get("error-files", [])) | {name})
+                    state["recovery-required"] = sorted(
+                        set(state.get("recovery-required", [])) | {name}
+                    )
+                    self.save_deployment_state(state)
                 raise
 
     def _update_locked(
@@ -236,6 +235,11 @@ class Workload:
         if before["sha256"] != expected_sha256:
             raise WorkloadError("remote file changed since pull; pull again and rebase your edit")
         if before["sha256"] == new_digest and not validate_only:
+            name = "config" if scope == "global" else f"zones/{zone}"
+            if name in self.deployment_state().get("recovery-required", []):
+                raise WorkloadError(
+                    "recovery required after failed rollback; no-op cannot repair activation"
+                )
             return {"sha256": new_digest, "changed": False, "validated": False}
         self._validate(path, data)
         if validate_only:

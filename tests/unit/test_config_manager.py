@@ -443,3 +443,20 @@ def test_noop_recovery_rejection_preserves_original_failure_state(manager):
     with pytest.raises(WorkloadError, match="recovery required"):
         host.handle(payload)
     assert host.workload.deployment_state() == state
+
+
+def test_changed_zone_cannot_clear_unactivated_global_recovery(manager):
+    host, calls = manager
+    payload = request(host)
+    payload["files"]["config"] = host.workload.read("global")["content-b64"]
+    state = {
+        "error": "global rollback failed",
+        "error-files": ["config"],
+        "recovery-required": ["config"],
+    }
+    with host.workload._lock():
+        host.workload.save_deployment_state(state)
+    with pytest.raises(WorkloadError, match="recovery required"):
+        host.handle(payload)
+    assert not calls
+    assert host.workload.deployment_state() == state
