@@ -34,7 +34,7 @@ def target():
 def action(juju, app, name, params):
     """Run one synchronous action with time for full native validation."""
     results = juju.run(f"{app}/0", name, params, wait=300).results
-    for key in ("exists", "changed", "validated", "active"):
+    for key in ("exists", "changed", "validated", "active", "zone-serials-ok"):
         if key in results and isinstance(results[key], str):
             assert results[key].lower() in {"true", "false"}
             results[key] = results[key].lower() == "true"

@@ -69,3 +69,25 @@ Exercise snapshot, validate and apply using a separately provisioned restricted
 SSH account. Test invalid native configuration, concurrent transactions and
 rollback only on the nonproduction unit. Retain caller-owned model resources.
 Never run fault-injection tests on production DNS.
+
+## SOA observation checks
+
+Unit tests cover native zone-file syntax, filename conventions, path safety,
+inspection limits, authoritative response validation and status/action behavior.
+The retained-model integration tests additionally compare the action with local
+UDP/TCP answers. An explicitly test-owned isolated zone is used to create a disk/served mismatch
+with an invalid candidate that gdnsd refuses to load; cleanup restores a valid
+zone and verifies active status. No production fault injection is permitted.
+
+After packing, select the explicit retained nonproduction model and artifact:
+
+```bash
+TEST_MODEL=CONTROLLER:MODEL CHARM_PATH="$PWD/gdnsd-vm_amd64.charm" \
+GDNSD_NONPRODUCTION=1 GDNSD_REFRESH=1 \
+uv run tox -e integration -- -k 'refresh_preserves or soa_observation'
+```
+
+The caller-owned model, application and machine remain after the tests.
+
+The SOA mismatch test refuses to replace an existing zone without its test-ownership
+marker. Its finally block repairs only that marked fixture and retains it.

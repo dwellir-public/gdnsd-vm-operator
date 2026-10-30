@@ -56,7 +56,7 @@ actions:
         description: Service operation to perform.
     required: [action]
   get-info:
-    description: Return workload version, service state and managed paths.
+    description: Return workload/package versions, service state, GeoIP metadata and per-zone SOA serial diagnostics.
   sync-geoip:
     description: Fetch and validate a GeoIP database, reusing the last supplied URL when omitted.
     params:

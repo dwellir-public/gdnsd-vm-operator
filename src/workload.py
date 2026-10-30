@@ -397,6 +397,17 @@ class Workload:
             self.config_dir / "geoip/GeoLite2-City.mmdb", include_sha256=include_sha256
         )
 
+    def zone_info(self) -> dict:
+        """Observe configured and served serials without modifying the workload."""
+        # Keep third-party DNS code out of the standalone system-Python helper's
+        # import path. Only the charm's health/info observation calls this.
+        from soa import inspect_zones
+
+        result = inspect_zones(self.config_dir)
+        if summary := result["zone-serials-summary"]:
+            result["zone-serials-summary"] = f"SOA {summary}"
+        return result
+
     def health(self) -> dict:
         """Observe systemd, the running version and local DNS without mutation."""
         version = ""
@@ -404,12 +415,18 @@ class Workload:
         geoip = self.geoip_info()
 
         def result(healthy: bool, state: str, message: str) -> dict:
+            zones = self.zone_info()
             return {
                 "healthy": healthy,
                 "state": state,
-                "message": f"{message}; {geoip['geoip-summary']}",
+                "message": "; ".join(
+                    part
+                    for part in (message, zones["zone-serials-summary"], geoip["geoip-summary"])
+                    if part
+                ),
                 "workload-version": version,
                 **geoip,
+                **zones,
             }
 
         try:
@@ -457,5 +474,9 @@ class Workload:
             "active": health["healthy"],
             "state": health["state"],
             "message": health["message"],
+            "zone-serials-json": json.dumps(health["zone-serials"], sort_keys=True),
+            "zone-serials-ok": health["zone-serials-ok"],
+            "zone-serials-summary": health["zone-serials-summary"],
+            "zone-serials-error": health["zone-serials-error"],
             **self.geoip_info(include_sha256=True),
         }

@@ -108,15 +108,18 @@ class GdnsdCharm(ops.CharmBase):
         else:
             errors.pop("geoip-inspection", None)
         self._stored.config_errors = errors
-        summary = str(health.get("geoip-summary", ""))
+        summaries = (
+            str(health.get("zone-serials-summary", "")),
+            str(health.get("geoip-summary", "")),
+        )
         if not health["healthy"]:
             self.unit.status = ops.BlockedStatus(
-                self._with_geoip_summary(health["message"], summary)
+                self._with_observation_summary(health["message"], *summaries)
             )
         elif deployment.get("error"):
             self.unit.status = ops.WaitingStatus(
-                self._with_geoip_summary(
-                    f"SSH configuration deployment failed: {deployment['error'][:300]}", summary
+                self._with_observation_summary(
+                    f"SSH configuration deployment failed: {deployment['error'][:300]}", *summaries
                 )
             )
         elif self._stored.config_errors:
@@ -126,25 +129,35 @@ class GdnsdCharm(ops.CharmBase):
                 if key in {"geoip", "geoip-inspection"}
                 else f"Supply a valid configuration for {key[:100]}; see action logs"
             )
-            self.unit.status = ops.WaitingStatus(self._with_geoip_summary(message, summary))
+            self.unit.status = ops.WaitingStatus(
+                self._with_observation_summary(message, *summaries)
+            )
         elif self._stored.exporter_error:
             self.unit.status = ops.WaitingStatus(self._stored.exporter_error)
         elif request_error:
             self.unit.status = ops.WaitingStatus(
-                self._with_geoip_summary(
-                    "Supply a valid configuration request; see action logs",
-                    summary,
+                self._with_observation_summary(
+                    "Supply a valid configuration request; see action logs", *summaries
                 )
+            )
+        elif not health.get("zone-serials-ok", True):
+            error = str(health.get("zone-serials-error", "unable to inspect zone serials"))
+            logger.warning("SOA serial inspection failed: %s", error)
+            self.unit.status = ops.WaitingStatus(
+                self._with_observation_summary(f"SOA serial inspection failed: {error}", *summaries)
             )
         else:
             self.unit.status = ops.ActiveStatus(
-                self._with_geoip_summary(health["message"], summary)
+                self._with_observation_summary(health["message"], *summaries)
             )
 
     @staticmethod
-    def _with_geoip_summary(message: str, summary: str) -> str:
-        """Include installed database metadata once in each reported status."""
-        return f"{message}; {summary}" if summary and summary not in message else message
+    def _with_observation_summary(message: str, *summaries: str) -> str:
+        """Include each current SOA/GeoIP observation once in a status message."""
+        for summary in summaries:
+            if summary and summary not in message:
+                message += f"; {summary}"
+        return message
 
     def _on_action(self, event: ops.ActionEvent) -> None:
         """Dispatch explicit operator requests and report clean action failures."""
