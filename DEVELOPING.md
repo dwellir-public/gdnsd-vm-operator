@@ -51,3 +51,21 @@ gh workflow run release.yml --repo dwellir-public/gdnsd-vm-operator --ref main
 
 A normal push runs lint and unit tests. It does not publish a Charmhub revision.
 For documentation changes, push the commit without dispatching the release workflow.
+
+## SSH helper verification
+
+Run `uv run tox -e lint,unit`. The helper unit tests exercise protocol bounds,
+conflicts, symlinks, native-validation failure, ordered bridge transitions,
+idempotence, complete rollback, rollback failure, checkpoint metadata and charm
+status integration. Native commands are replaced at the workload boundary;
+these tests do not establish live gdnsd or restricted SSH behavior.
+
+For manual verification on an explicitly selected retained nonproduction unit,
+first build and deploy the local charm artifact through the integration workflow
+above. Verify that refresh retains configuration hashes, GeoIP hash, package
+version and gdnsd PID. Inspect helper ownership and permissions, then run the
+fixed helper command with `{"version":1,"operation":"status"}` on stdin.
+Exercise snapshot, validate and apply using a separately provisioned restricted
+SSH account. Test invalid native configuration, concurrent transactions and
+rollback only on the nonproduction unit. Retain caller-owned model resources.
+Never run fault-injection tests on production DNS.

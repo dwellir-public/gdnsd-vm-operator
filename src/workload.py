@@ -244,6 +244,67 @@ class Workload:
             (self.state_dir / "last-applied.json").write_text(json.dumps(checkpoint) + "\n")
             return {"sha256": new_digest, "changed": True, "validated": True}
 
+    def deployment_state(self) -> dict:
+        """Read shared SSH deployment state without importing charm dependencies."""
+        path = self.state_dir / "deployment.json"
+        if not path.exists():
+            return {}
+        try:
+            state = json.loads(path.read_text())
+            if not isinstance(state, dict):
+                raise ValueError("expected an object")
+            return state
+        except (ValueError, OSError) as exc:
+            raise WorkloadError(f"cannot read deployment state: {exc}") from exc
+
+    def save_deployment_state(self, state: dict) -> None:
+        """Atomically save shared state while the caller holds the transaction lock."""
+        self.state_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        self._write(self.state_dir / "deployment.json", (json.dumps(state) + "\n").encode(), 0o600)
+
+    def configuration_failed(self, key: str) -> None:
+        """Invalidate an earlier SSH repair when a later action fails for that file."""
+        key = key.removeprefix("read:")
+        name = "config" if key == "global" else "zones/" + key.removeprefix("zone:")
+        with self._lock():
+            state = self.deployment_state()
+            repaired = state.get("repaired", {})
+            if name in repaired:
+                repaired.pop(name)
+                self.save_deployment_state(state)
+
+    def configuration_succeeded(self, key: str) -> None:
+        """Clear SSH failure scopes repaired by a successful apply action."""
+        name = "config" if key == "global" else "zones/" + key.removeprefix("zone:")
+        with self._lock():
+            state = self.deployment_state()
+            affected = state.get("error-files", [])
+            if name in affected:
+                affected.remove(name)
+                state["error-files"] = affected
+                if not affected:
+                    state["error"] = ""
+                self.save_deployment_state(state)
+
+    def install_manager(self, prefix: Path = Path("/usr/local")) -> None:
+        """Reconcile a root-owned standalone helper without changing the DNS service."""
+        library = prefix / "lib/gdnsd-vm"
+        binary = prefix / "sbin"
+        for directory in (prefix, prefix / "lib", library, binary):
+            if directory.is_symlink():
+                raise WorkloadError("helper directories must not be symlinks")
+            directory.mkdir(mode=0o755, parents=True, exist_ok=True)
+            directory.chmod(0o755)
+            os.chown(directory, 0, 0)
+        for name in ("workload.py", "config_manager.py"):
+            self._write(library / name, Path(__file__).with_name(name).read_bytes(), 0o644, (0, 0))
+        launcher = (
+            "#!/usr/bin/python3 -I\nimport sys\n"
+            "sys.path.insert(0, '/usr/local/lib/gdnsd-vm')\n"
+            "from config_manager import main\nraise SystemExit(main())\n"
+        )
+        self._write(binary / "gdnsd-config-manager", launcher.encode(), 0o755, (0, 0))
+
     def install(self, address: str) -> None:
         """Install only when absent, adopting existing installations unchanged."""
         try:

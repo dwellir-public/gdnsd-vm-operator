@@ -261,3 +261,50 @@ To diagnose local collection, run `curl -fsS http://127.0.0.1:9153/metrics` on
 the unit and inspect `journalctl -u gdnsd-exporter.service`. A healthy local
 endpoint does not prove backend delivery. Check recent Prometheus samples and
 Loki entries with the principal's Juju labels before relying on monitoring.
+
+## Restricted SSH configuration management
+
+Install and charm refresh reconcile `/usr/local/sbin/gdnsd-config-manager` and
+root-owned Python sources under `/usr/local/lib/gdnsd-vm`. Refresh installs these
+files without restarting gdnsd or changing its package, configuration or GeoIP
+database. The helper runs with the system Python and uses only its standard
+library. Existing Juju actions and relations remain available.
+
+Provision deployment accounts, keys, sudo policy and trusted SSH host keys
+separately. Restrict each deployment key to the exact forced command
+`sudo -n /usr/local/sbin/gdnsd-config-manager ssh`, with forwarding and PTYs
+disabled. The charm does not create accounts or credentials.
+
+The command reads one bounded JSON request on stdin and writes one JSON response
+on stdout. Every request requires `"version":1` and an `operation`. Responses are
+`{"version":1,"ok":true,"result":{...}}`, or
+`{"version":1,"ok":false,"error":"..."}` with a nonzero exit status.
+
+- `snapshot` accepts an optional `zones` list, defaulting to `n.dwellir.com` and
+  `x.dwellir.com`. `result.files` contains `config` and selected `zones/<fqdn>`
+  entries with `sha256`, `content-b64` and `exists`. A missing file has digest
+  `absent`. `result.deployment` contains the last release checkpoint, or `{}`
+  before initialization.
+- `status` reports `healthy`, control socket output, deployment state and an
+  error message. It checks systemd and local UDP/TCP DNS without restarting.
+- `validate` and `apply` require `files`, mapping exact configuration names to
+  base64 UTF-8 contents, and `expected`, mapping exactly those names to their
+  snapshot digests or `absent`. Each file is limited to 2 MiB; the decoded
+  request is limited to 8 MiB, including an optional `bridge-b64` global config.
+  Responses include final digest maps in `files` and `checksums`, plus `changed`
+  and `validated` booleans. Validation changes no live files or checkpoint.
+
+Optional `release` fields are `commit` with 40 lowercase hexadecimal characters,
+`source-sha256` with 64, a uint32 `serial`, and an `id` of up to 128 letters,
+digits, dots, underscores, colons or hyphens. Successful apply records release
+metadata and final hashes in `deployment.release` and `deployment.files`, even
+when contents are identical. Identical contents cause no native activation.
+Deployment state also includes error and repair information used by charm status.
+
+For resource renames, supply `bridge-b64` containing both old and new global
+resource definitions. The helper validates the bridge with existing zones,
+each selected new zone under the bridge, then the final global configuration.
+All validation precedes live writes. Apply activates those same stages in order,
+with `replace` for globals and `reload-zones` for zones. Failed activation restores
+all affected files and their ownership/modes, then activates the original tree.
+A failed rollback reports partial failure and the backup directory for recovery.
