@@ -119,7 +119,9 @@ helper without a workload restart. Credential provisioning is separate.
 All selected-file snapshot reads and validate/apply transactions share
 `/var/lib/gdnsd-vm/transaction.lock` with existing configuration and GeoIP actions.
 The lock covers hash comparisons, complete candidate-tree validation, backups,
-activation, rollback and release checkpoint writes. A bridge configuration
+activation, rollback and release checkpoint writes. Mandatory deployment identity
+comparison uses a SHA256 of canonical `release` and `files` checkpoint maps, so a
+stale writer cannot overwrite release metadata through an identical-file apply. A bridge configuration
 supports resource renames across zone reloads. Unselected zones remain intact.
 Existing `Workload` path, atomic-write, ownership, activation and lock helpers
 are reused without calling the single-file action transaction recursively.
@@ -129,6 +131,9 @@ hashes, error text and repaired file hashes. `update-status` observes this state
 A successful SSH apply clears old action errors for repaired files whose live
 hash still matches. A later failed action invalidates that file's repair marker.
 Successful apply actions also clear SSH errors after all affected file scopes
-have been repaired. GeoIP and exporter errors retain their existing independent
+have been repaired. Action outcome bookkeeping runs inside the original update
+transaction lock. Failed rollback marks scopes as requiring recovery; identical
+files cannot clear those markers without activation. Unrelated scopes retain
+their SSH errors after a successful selected-file operation. GeoIP and exporter errors retain their existing independent
 status behavior.
 Backups remain private under `/var/lib/gdnsd-vm/backups`.

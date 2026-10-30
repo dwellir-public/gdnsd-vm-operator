@@ -185,6 +185,39 @@ class Workload:
         expected_sha256: str,
         validate_only: bool = False,
     ) -> dict:
+        """Apply a file and record its outcome under one shared transaction lock."""
+        with self._lock():
+            key = "global" if scope == "global" else f"zone:{zone}"
+            try:
+                self._path(scope, zone)
+                name = "config" if scope == "global" else f"zones/{zone}"
+                state = self.deployment_state()
+                if (
+                    not validate_only
+                    and name in state.get("recovery-required", [])
+                    and self.read(scope, zone)["content-b64"] == content_b64
+                ):
+                    raise WorkloadError(
+                        "recovery required after failed rollback; no-op cannot repair activation"
+                    )
+                result = self._update_locked(
+                    scope, zone, content_b64, expected_sha256, validate_only
+                )
+                if not validate_only:
+                    self._configuration_succeeded_locked(key)
+                return result
+            except (WorkloadError, ValueError, OSError):
+                self._configuration_failed_locked(key)
+                raise
+
+    def _update_locked(
+        self,
+        scope: str,
+        zone: str,
+        content_b64: str,
+        expected_sha256: str,
+        validate_only: bool = False,
+    ) -> dict:
         """Validate and optionally apply one file, restoring it on failure."""
         path = self._path(scope, zone)
         if len(content_b64) > (MAX_CONTENT * 4 // 3) + 8:
@@ -199,50 +232,47 @@ class Workload:
         if not data or len(data) > MAX_CONTENT:
             raise WorkloadError("configuration must contain between 1 byte and 2 MiB")
         new_digest = hashlib.sha256(data).hexdigest()
-        with self._lock():
-            before = self.read(scope, zone)
-            if before["sha256"] != expected_sha256:
-                raise WorkloadError(
-                    "remote file changed since pull; pull again and rebase your edit"
-                )
-            if before["sha256"] == new_digest and not validate_only:
-                return {"sha256": new_digest, "changed": False, "validated": False}
-            self._validate(path, data)
-            if validate_only:
-                return {"sha256": new_digest, "changed": False, "validated": True}
-            if self.read(scope, zone)["sha256"] != expected_sha256:
-                raise WorkloadError("remote file changed during validation; pull again")
-            old = base64.b64decode(before["content-b64"])
-            attributes = path.stat() if before["exists"] else None
-            mode = stat.S_IMODE(attributes.st_mode) if attributes else 0o644
-            owner = (attributes.st_uid, attributes.st_gid) if attributes else None
-            backups = self.state_dir / "backups"
-            backups.mkdir(mode=0o700, exist_ok=True)
-            backup = backups / f"{path.name}-{expected_sha256}"
-            if before["exists"] and not backup.exists():
-                backup.write_bytes(old)
-                backup.chmod(0o600)
-            self._write(path, data, mode, owner)
+        before = self.read(scope, zone)
+        if before["sha256"] != expected_sha256:
+            raise WorkloadError("remote file changed since pull; pull again and rebase your edit")
+        if before["sha256"] == new_digest and not validate_only:
+            return {"sha256": new_digest, "changed": False, "validated": False}
+        self._validate(path, data)
+        if validate_only:
+            return {"sha256": new_digest, "changed": False, "validated": True}
+        if self.read(scope, zone)["sha256"] != expected_sha256:
+            raise WorkloadError("remote file changed during validation; pull again")
+        old = base64.b64decode(before["content-b64"])
+        attributes = path.stat() if before["exists"] else None
+        mode = stat.S_IMODE(attributes.st_mode) if attributes else 0o644
+        owner = (attributes.st_uid, attributes.st_gid) if attributes else None
+        backups = self.state_dir / "backups"
+        backups.mkdir(mode=0o700, exist_ok=True)
+        backup = backups / f"{path.name}-{expected_sha256}"
+        if before["exists"] and not backup.exists():
+            backup.write_bytes(old)
+            backup.chmod(0o600)
+        self._write(path, data, mode, owner)
+        try:
+            self._activate(scope)
+        except Exception as apply_error:
             try:
+                if before["exists"]:
+                    self._write(path, old, mode, owner)
+                else:
+                    path.unlink()
                 self._activate(scope)
-            except Exception as apply_error:
-                try:
-                    if before["exists"]:
-                        self._write(path, old, mode, owner)
-                    else:
-                        path.unlink()
-                    self._activate(scope)
-                except Exception as rollback_error:
-                    raise WorkloadError(
-                        f"application failed: {apply_error}; rollback failed: {rollback_error}; "
-                        f"inspect {backup}"
-                    ) from rollback_error
+            except Exception as rollback_error:
                 raise WorkloadError(
-                    f"application failed: {apply_error}; previous configuration restored"
-                ) from apply_error
-            checkpoint = {"scope": scope, "zone": zone, "sha256": new_digest}
-            (self.state_dir / "last-applied.json").write_text(json.dumps(checkpoint) + "\n")
-            return {"sha256": new_digest, "changed": True, "validated": True}
+                    f"application failed: {apply_error}; rollback failed: {rollback_error}; "
+                    f"inspect {backup}"
+                ) from rollback_error
+            raise WorkloadError(
+                f"application failed: {apply_error}; previous configuration restored"
+            ) from apply_error
+        checkpoint = {"scope": scope, "zone": zone, "sha256": new_digest}
+        (self.state_dir / "last-applied.json").write_text(json.dumps(checkpoint) + "\n")
+        return {"sha256": new_digest, "changed": True, "validated": True}
 
     def deployment_state(self) -> dict:
         """Read shared SSH deployment state without importing charm dependencies."""
@@ -263,28 +293,39 @@ class Workload:
         self._write(self.state_dir / "deployment.json", (json.dumps(state) + "\n").encode(), 0o600)
 
     def configuration_failed(self, key: str) -> None:
-        """Invalidate an earlier SSH repair when a later action fails for that file."""
+        """Invalidate an old repair marker under the shared transaction lock."""
+        with self._lock():
+            self._configuration_failed_locked(key)
+
+    def _configuration_failed_locked(self, key: str) -> None:
+        """Record a failed action while its transaction lock is already held."""
         key = key.removeprefix("read:")
         name = "config" if key == "global" else "zones/" + key.removeprefix("zone:")
-        with self._lock():
-            state = self.deployment_state()
-            repaired = state.get("repaired", {})
-            if name in repaired:
-                repaired.pop(name)
-                self.save_deployment_state(state)
+        state = self.deployment_state()
+        repaired = state.get("repaired", {})
+        if name in repaired:
+            repaired.pop(name)
+            self.save_deployment_state(state)
 
     def configuration_succeeded(self, key: str) -> None:
-        """Clear SSH failure scopes repaired by a successful apply action."""
-        name = "config" if key == "global" else "zones/" + key.removeprefix("zone:")
+        """Clear repaired SSH failure scopes under the shared transaction lock."""
         with self._lock():
-            state = self.deployment_state()
-            affected = state.get("error-files", [])
-            if name in affected:
-                affected.remove(name)
-                state["error-files"] = affected
-                if not affected:
-                    state["error"] = ""
-                self.save_deployment_state(state)
+            self._configuration_succeeded_locked(key)
+
+    def _configuration_succeeded_locked(self, key: str) -> None:
+        """Record successful action repair without reacquiring the held lock."""
+        name = "config" if key == "global" else "zones/" + key.removeprefix("zone:")
+        state = self.deployment_state()
+        affected = state.get("error-files", [])
+        if name in affected:
+            affected.remove(name)
+            state["error-files"] = affected
+            state["recovery-required"] = [
+                path for path in state.get("recovery-required", []) if path != name
+            ]
+            if not affected:
+                state["error"] = ""
+            self.save_deployment_state(state)
 
     def install_manager(self, prefix: Path = Path("/usr/local")) -> None:
         """Reconcile a root-owned standalone helper without changing the DNS service."""

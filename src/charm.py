@@ -169,8 +169,6 @@ class GdnsdCharm(ops.CharmBase):
                 result = self.workload.service(str(event.params["action"]))
             else:
                 result = self.workload.info()
-            if name == "apply_config_action":
-                self.workload.configuration_succeeded(config_key)
             self._set_results(event, result)
             if name in {
                 "get_config_action",
@@ -197,7 +195,6 @@ class GdnsdCharm(ops.CharmBase):
             )
             logger.warning("Rejected %s: %s", event.handle.kind, message)
             if config_key:
-                self.workload.configuration_failed(config_key)
                 errors = dict(self._stored.config_errors)
                 errors[config_key] = message
                 self._stored.config_errors = errors

@@ -38,6 +38,7 @@ def request(manager, **extra):
         "operation": "apply",
         "files": files,
         "expected": {key: value["sha256"] for key, value in before["files"].items()},
+        "expected-deployment": before.get("deployment-token", "0" * 64),
         **extra,
     }
 
@@ -60,6 +61,7 @@ def test_apply_preserves_unselected_and_is_idempotent(manager):
     assert ["gdnsdctl", "reload-zones"] in calls
     calls.clear()
     payload["expected"] = result["checksums"]
+    payload["expected-deployment"] = result["deployment-token"]
     assert not host.handle(payload)["changed"]
     assert not calls
 
@@ -194,6 +196,7 @@ def test_noop_records_release_checkpoint_without_activation(manager):
     payload = request(host)
     result = host.handle(payload)
     payload["expected"] = result["checksums"]
+    payload["expected-deployment"] = result["deployment-token"]
     payload["release"] = {
         "commit": "a" * 40,
         "serial": 2026103001,
@@ -263,6 +266,7 @@ def test_payload_total_and_empty_content_are_bounded(manager):
                 "operation": "apply",
                 "files": files,
                 "expected": dict.fromkeys(files, "absent"),
+                "expected-deployment": "0" * 64,
             }
         )
     assert not calls
@@ -342,3 +346,100 @@ def test_successful_action_repairs_failed_ssh_scopes_independently(manager):
     assert host.workload.deployment_state()["error"] == "failed release"
     host.workload.configuration_succeeded("zone:example.org")
     assert host.workload.deployment_state()["error"] == ""
+
+
+@pytest.mark.parametrize("unchanged", [False, True])
+def test_success_only_clears_selected_ssh_error_scopes(manager, unchanged):
+    host, calls = manager
+    payload = request(host)
+    if unchanged:
+        payload["files"] = {
+            name: host.workload.read(*host.target(name))["content-b64"] for name in payload["files"]
+        }
+    state = {"error": "unrelated error", "error-files": ["zones/other.org"]}
+    with host.workload._lock():
+        host.workload.save_deployment_state(state)
+    host.handle(payload)
+    assert host.workload.deployment_state()["error"] == "unrelated error"
+    assert host.workload.deployment_state()["error-files"] == ["zones/other.org"]
+
+
+def test_deployment_identity_cas_rejects_unchanged_file_stale_release(manager):
+    host, calls = manager
+    stale = request(host)
+    live = request(host, release={"id": "first"})
+    result = host.handle(live)
+    stale["expected"] = result["files"]
+    calls.clear()
+    with pytest.raises(WorkloadError, match="deployment.*changed"):
+        host.handle(stale)
+    assert not calls
+    snapshot = host.handle({"version": 1, "operation": "snapshot", "zones": ["example.org"]})
+    assert len(snapshot["deployment-token"]) == 64
+
+
+def test_expected_deployment_is_mandatory(manager):
+    host, calls = manager
+    payload = request(host)
+    payload.pop("expected-deployment", None)
+    with pytest.raises(WorkloadError, match="expected-deployment"):
+        host.handle(payload)
+    assert not calls
+
+
+def test_noop_cannot_clear_rollback_uncertainty(manager):
+    host, calls = manager
+    normal = host.workload.command
+    payload = request(host)
+
+    def reject(argv):
+        if argv[0] == "gdnsdctl":
+            raise WorkloadError("control unavailable")
+        return normal(argv)
+
+    host.workload.command = reject
+    with pytest.raises(WorkloadError, match="rollback failed"):
+        host.handle(payload)
+    host.workload.command = normal
+    payload = request(host)
+    for name in payload["files"]:
+        payload["files"][name] = host.workload.read(*host.target(name))["content-b64"]
+    with pytest.raises(WorkloadError, match="recovery required"):
+        host.handle(payload)
+    assert host.workload.deployment_state()["error"]
+
+
+def test_snapshot_identity_uses_canonical_release_and_files_only(manager):
+    import hashlib
+
+    host, calls = manager
+    state = {
+        "release": {"id": "hello"},
+        "files": {"config": "a" * 64},
+        "error": "ignored",
+        "repaired": {"config": "b" * 64},
+    }
+    canonical = json.dumps(
+        {"release": state["release"], "files": state["files"]},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    assert host.deployment_token(state) == hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def test_noop_recovery_rejection_preserves_original_failure_state(manager):
+    host, calls = manager
+    payload = request(host)
+    payload["files"] = {
+        name: host.workload.read(*host.target(name))["content-b64"] for name in payload["files"]
+    }
+    state = {
+        "error": "original rollback failed detail",
+        "error-files": ["config"],
+        "recovery-required": ["config"],
+    }
+    with host.workload._lock():
+        host.workload.save_deployment_state(state)
+    with pytest.raises(WorkloadError, match="recovery required"):
+        host.handle(payload)
+    assert host.workload.deployment_state() == state

@@ -63,7 +63,7 @@ class Manager:
         if operation == "snapshot":
             allowed |= {"zones"}
         elif operation in ("validate", "apply"):
-            allowed |= {"files", "expected", "bridge-b64", "release"}
+            allowed |= {"files", "expected", "bridge-b64", "release", "expected-deployment"}
         if request.keys() - allowed:
             raise WorkloadError("unknown request fields")
         if operation == "status":
@@ -81,12 +81,20 @@ class Manager:
                 files = {name: self.workload.read(*self.target(name)) for name in names}
                 if sum(len(v["content-b64"]) for v in files.values()) > MAX_REQUEST:
                     raise WorkloadError("snapshot exceeds total payload limit")
-                return {"files": files, "deployment": self.workload.deployment_state()}
+                state = self.workload.deployment_state()
+                return {
+                    "files": files,
+                    "deployment": state,
+                    "deployment-token": self.deployment_token(state),
+                }
         files, expected = request.get("files"), request.get("expected")
         if not isinstance(files, dict) or not 1 <= len(files) <= 65:
             raise WorkloadError("files must contain 1 to 65 selected files")
         if not isinstance(expected, dict) or expected.keys() != files.keys():
             raise WorkloadError("expected must cover exactly the selected files")
+        identity = request.get("expected-deployment")
+        if not isinstance(identity, str) or not DIGEST.fullmatch(identity):
+            raise WorkloadError("expected-deployment must be a SHA256 snapshot token")
         data = {}
         for name, content in files.items():
             self.target(name)
@@ -102,14 +110,31 @@ class Manager:
         release = request.get("release", {})
         self.validate_release(release)
         with self.workload._lock():
+            if identity != self.deployment_token(self.workload.deployment_state()):
+                raise WorkloadError("deployment identity changed since snapshot; pull again")
             try:
-                return self.transact(data, expected, bridge, release, operation == "validate")
+                result = self.transact(data, expected, bridge, release, operation == "validate")
+                result["deployment-token"] = self.deployment_token(self.workload.deployment_state())
+                return result
             except (WorkloadError, OSError) as exc:
                 state = self.workload.deployment_state()
+                if state.get("recovery-required") and str(exc).startswith("recovery required"):
+                    raise
                 state["error"] = str(exc)
-                state["error-files"] = list(data)
+                state["error-files"] = sorted(set(state.get("error-files", [])) | set(data))
+                if "rollback failed" in str(exc):
+                    state["recovery-required"] = sorted(
+                        set(state.get("recovery-required", [])) | set(data)
+                    )
                 self.workload.save_deployment_state(state)
                 raise
+
+    @staticmethod
+    def deployment_token(state: dict) -> str:
+        """Hash only the canonical last-successful release identity and file map."""
+        identity = {"release": state.get("release", {}), "files": state.get("files", {})}
+        canonical = json.dumps(identity, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode()).hexdigest()
 
     @staticmethod
     def validate_release(release: dict) -> None:
@@ -163,6 +188,10 @@ class Manager:
         checksums = {name: hashlib.sha256(content).hexdigest() for name, content in data.items()}
         changed = [name for name in data if checksums[name] != expected[name]]
         if not changed and not validate_only:
+            if set(data) & set(work.deployment_state().get("recovery-required", [])):
+                raise WorkloadError(
+                    "recovery required after failed rollback; no-op cannot repair activation"
+                )
             self.success(checksums, release)
             return {
                 "changed": False,
@@ -252,8 +281,14 @@ class Manager:
         state = self.workload.deployment_state()
         repaired = dict(state.get("repaired", {}))
         repaired.update(checksums)
-        state.update(error="", repaired=repaired, checksums=checksums, files=checksums)
-        state["error-files"] = []
+        remaining = sorted(set(state.get("error-files", [])) - set(checksums))
+        state.update(repaired=repaired, checksums=checksums, files=checksums)
+        state["error-files"] = remaining
+        state["recovery-required"] = sorted(
+            set(state.get("recovery-required", [])) - set(checksums)
+        )
+        if not remaining:
+            state["error"] = ""
         if release:
             state["release"] = release
         self.workload.save_deployment_state(state)

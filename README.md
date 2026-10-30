@@ -284,12 +284,16 @@ on stdout. Every request requires `"version":1` and an `operation`. Responses ar
   `x.dwellir.com`. `result.files` contains `config` and selected `zones/<fqdn>`
   entries with `sha256`, `content-b64` and `exists`. A missing file has digest
   `absent`. `result.deployment` contains the last release checkpoint, or `{}`
-  before initialization.
+  before initialization. `result.deployment-token` is the SHA256 of canonical
+  JSON containing that checkpoint's `release` and `files` maps.
 - `status` reports `healthy`, control socket output, deployment state and an
   error message. It checks systemd and local UDP/TCP DNS without restarting.
 - `validate` and `apply` require `files`, mapping exact configuration names to
   base64 UTF-8 contents, and `expected`, mapping exactly those names to their
-  snapshot digests or `absent`. Each file is limited to 2 MiB; the decoded
+  snapshot digests or `absent`. The required `expected-deployment` field contains
+  the snapshot's deployment token. The helper rejects a changed release identity
+  under the same transaction lock, even if selected file contents are unchanged.
+  Each file is limited to 2 MiB; the decoded
   request is limited to 8 MiB, including an optional `bridge-b64` global config.
   Responses include final digest maps in `files` and `checksums`, plus `changed`
   and `validated` booleans. Validation changes no live files or checkpoint.
@@ -308,3 +312,7 @@ All validation precedes live writes. Apply activates those same stages in order,
 with `replace` for globals and `reload-zones` for zones. Failed activation restores
 all affected files and their ownership/modes, then activates the original tree.
 A failed rollback reports partial failure and the backup directory for recovery.
+A later identical-file apply is rejected while its scopes require activation
+recovery. Restore and activate a known-good configuration using operator access,
+then apply a changed, validated release to establish a new checkpoint. Successful
+operations clear only the failure scopes covered by their selected files.

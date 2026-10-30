@@ -366,3 +366,52 @@ def test_info_distinguishes_package_version_from_running_version():
     assert info["package-version"] == "3.8.2-1build2"
     assert info["workload-version"] == "3.8.2"
     assert info["state"] == "running"
+
+
+def test_action_outcome_bookkeeping_holds_same_transaction_lock(instance, monkeypatch):
+    import fcntl
+
+    work, calls = instance
+    before = work.read("zone", "x.example.com")
+    with work._lock():
+        work.save_deployment_state({"error": "SSH error", "error-files": ["zones/x.example.com"]})
+    normal_write = work._write
+    held = []
+
+    def write(path, *args):
+        if path.name == "deployment.json":
+            with (work.state_dir / "transaction.lock").open("a") as lock:
+                with pytest.raises(BlockingIOError):
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            held.append(True)
+        return normal_write(path, *args)
+
+    monkeypatch.setattr(work, "_write", write)
+    work.update("zone", "x.example.com", encode("new content"), before["sha256"])
+    assert held
+    assert not work.deployment_state()["error"]
+
+
+def test_failed_action_invalidates_repair_while_transaction_lock_is_held(instance, monkeypatch):
+    import fcntl
+
+    work, calls = instance
+    before = work.read("zone", "x.example.com")
+    with work._lock():
+        work.save_deployment_state({"repaired": {"zones/x.example.com": before["sha256"]}})
+    normal_write = work._write
+    observed = []
+
+    def write(path, *args):
+        if path.name == "deployment.json":
+            with (work.state_dir / "transaction.lock").open("a") as lock:
+                with pytest.raises(BlockingIOError):
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            observed.append(True)
+        return normal_write(path, *args)
+
+    monkeypatch.setattr(work, "_write", write)
+    with pytest.raises(WorkloadError):
+        work.update("zone", "x.example.com", encode("new content"), "0" * 64)
+    assert observed
+    assert not work.deployment_state()["repaired"]
