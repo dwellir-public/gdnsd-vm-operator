@@ -56,6 +56,7 @@ class GdnsdCharm(ops.CharmBase):
             if binding is None or binding.network.bind_address is None:
                 raise WorkloadError("No private address is available for gdnsd")
             self.workload.install(str(binding.network.bind_address))
+            self.workload.install_manager()
             Exporter().reconcile()
             self.unit.open_port("tcp", 53)
             self.unit.open_port("udp", 53)
@@ -67,11 +68,14 @@ class GdnsdCharm(ops.CharmBase):
     def _on_exporter_refresh(self, event: ops.HookEvent) -> None:
         """Refresh only the auxiliary exporter, preserving the DNS process."""
         try:
+            self.workload.install_manager()
             Exporter().reconcile()
             self._stored.exporter_error = ""
-        except (OSError, subprocess.SubprocessError):
+        except (WorkloadError, OSError, subprocess.SubprocessError):
             logger.exception("Unable to reconcile gdnsd exporter")
-            self._stored.exporter_error = "DNS exporter installation failed; see logs"
+            self._stored.exporter_error = (
+                "DNS management helper or exporter installation failed; see logs"
+            )
 
     def _on_observe(self, event: ops.HookEvent) -> None:
         """Observe service health without changing host files or service state."""
@@ -81,12 +85,23 @@ class GdnsdCharm(ops.CharmBase):
         """Publish the observed workload version and local service health."""
         try:
             health = self.workload.health()
+            deployment = self.workload.deployment_state()
             if version := health["workload-version"]:
                 self.unit.set_workload_version(version)
         except (WorkloadError, ValueError) as exc:
             self.unit.status = ops.BlockedStatus(str(exc))
             return
         errors = dict(self._stored.config_errors)
+        try:
+            for name, digest in deployment.get("repaired", {}).items():
+                scope, zone = ("global", "") if name == "config" else ("zone", name[6:])
+                if self.workload.read(scope, zone)["sha256"] == digest:
+                    key = "global" if scope == "global" else f"zone:{zone}"
+                    errors.pop(key, None)
+                    errors.pop(f"read:{key}", None)
+        except (WorkloadError, OSError) as exc:
+            self.unit.status = ops.BlockedStatus(str(exc))
+            return
         if inspection_error := health.get("geoip-error"):
             logger.warning("GeoIP database inspection failed: %s", inspection_error)
             errors["geoip-inspection"] = str(inspection_error)
@@ -97,6 +112,12 @@ class GdnsdCharm(ops.CharmBase):
         if not health["healthy"]:
             self.unit.status = ops.BlockedStatus(
                 self._with_geoip_summary(health["message"], summary)
+            )
+        elif deployment.get("error"):
+            self.unit.status = ops.WaitingStatus(
+                self._with_geoip_summary(
+                    f"SSH configuration deployment failed: {deployment['error'][:300]}", summary
+                )
             )
         elif self._stored.config_errors:
             key = next(iter(self._stored.config_errors)).removeprefix("read:")

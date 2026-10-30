@@ -16,6 +16,7 @@ def workload():
     """Replace host operations at the workload boundary."""
     with patch("charm.Workload") as factory, patch("charm.Exporter"):
         instance = factory.return_value
+        instance.deployment_state.return_value = {}
         instance.health.return_value = {
             "healthy": True,
             "message": "running",
@@ -675,3 +676,57 @@ def test_large_config_uses_bounded_result_parts(ctx, workload):
     assert joined == encoded
     assert ctx.action_results["sha256"] == host.read.return_value["sha256"]
     assert "content-b64" not in ctx.action_results
+
+
+def test_helper_reconciled_on_install_and_refresh(ctx, workload):
+    _, host = workload
+    network = Network(
+        binding_name="juju-info",
+        bind_addresses=[BindAddress(addresses=[Address(value="10.20.30.40")])],
+    )
+    ctx.run(ctx.on.install(), State(networks={network}))
+    host.install_manager.assert_called_once_with()
+    host.install_manager.reset_mock()
+    ctx.run(ctx.on.upgrade_charm(), State())
+    host.install_manager.assert_called_once_with()
+
+
+def test_ssh_failure_visible_and_repair_clears_action_error(ctx, workload):
+    from ops.testing import StoredState
+
+    _, host = workload
+    host.deployment_state.return_value = {"error": "rollback failed", "repaired": {}}
+    state = ctx.run(ctx.on.update_status(), State())
+    assert isinstance(state.unit_status, ops.WaitingStatus)
+    assert "rollback failed" in state.unit_status.message
+    host.deployment_state.return_value = {"error": "", "repaired": {"zones/example.org": "a" * 64}}
+    prior = StoredState(
+        name="_stored",
+        owner_path="GdnsdCharm",
+        content={
+            "geoip_url": "",
+            "config_errors": {"zone:example.org": "invalid"},
+            "exporter_error": "",
+        },
+    )
+    state = ctx.run(ctx.on.update_status(), State(stored_states={prior}))
+    assert isinstance(state.unit_status, ops.ActiveStatus)
+
+
+def test_helper_install_failure_is_visible_on_refresh(ctx, workload):
+    from workload import WorkloadError
+
+    _, host = workload
+    host.install_manager.side_effect = WorkloadError("helper path is a symlink")
+    state = ctx.run(ctx.on.upgrade_charm(), State())
+    assert isinstance(state.unit_status, ops.WaitingStatus)
+
+
+def test_repair_read_failure_is_observed_without_crashing(ctx, workload):
+    from workload import WorkloadError
+
+    _, host = workload
+    host.deployment_state.return_value = {"repaired": {"config": "a" * 64}}
+    host.read.side_effect = WorkloadError("configuration paths must not be symlinks")
+    state = ctx.run(ctx.on.update_status(), State())
+    assert isinstance(state.unit_status, ops.BlockedStatus)

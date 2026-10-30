@@ -366,3 +366,96 @@ def test_info_distinguishes_package_version_from_running_version():
     assert info["package-version"] == "3.8.2-1build2"
     assert info["workload-version"] == "3.8.2"
     assert info["state"] == "running"
+
+
+def test_action_outcome_bookkeeping_holds_same_transaction_lock(instance, monkeypatch):
+    import fcntl
+
+    work, calls = instance
+    before = work.read("zone", "x.example.com")
+    with work._lock():
+        work.save_deployment_state({"error": "SSH error", "error-files": ["zones/x.example.com"]})
+    normal_write = work._write
+    held = []
+
+    def write(path, *args):
+        if path.name == "deployment.json":
+            with (work.state_dir / "transaction.lock").open("a") as lock:
+                with pytest.raises(BlockingIOError):
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            held.append(True)
+        return normal_write(path, *args)
+
+    monkeypatch.setattr(work, "_write", write)
+    work.update("zone", "x.example.com", encode("new content"), before["sha256"])
+    assert held
+    assert not work.deployment_state()["error"]
+
+
+def test_failed_action_invalidates_repair_while_transaction_lock_is_held(instance, monkeypatch):
+    import fcntl
+
+    work, calls = instance
+    before = work.read("zone", "x.example.com")
+    with work._lock():
+        work.save_deployment_state({"repaired": {"zones/x.example.com": before["sha256"]}})
+    normal_write = work._write
+    observed = []
+
+    def write(path, *args):
+        if path.name == "deployment.json":
+            with (work.state_dir / "transaction.lock").open("a") as lock:
+                with pytest.raises(BlockingIOError):
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            observed.append(True)
+        return normal_write(path, *args)
+
+    monkeypatch.setattr(work, "_write", write)
+    with pytest.raises(WorkloadError):
+        work.update("zone", "x.example.com", encode("new content"), "0" * 64)
+    assert observed
+    assert not work.deployment_state()["repaired"]
+
+
+def test_action_failed_rollback_records_recovery_and_blocks_identical_retry(instance):
+    work, calls = instance
+    before = work.read("global")
+    normal = work.command
+
+    def reject(argv):
+        if argv[0] == "gdnsdctl":
+            raise WorkloadError("control unavailable")
+        return normal(argv)
+
+    work.command = reject
+    with pytest.raises(WorkloadError, match="rollback failed"):
+        work.update("global", "", encode("new global"), before["sha256"])
+    state = work.deployment_state()
+    assert state["recovery-required"] == ["config"]
+    assert state["error-files"] == ["config"]
+    assert "rollback failed" in state["error"]
+    work.command = normal
+    calls.clear()
+    with pytest.raises(WorkloadError, match="recovery required"):
+        work.update("global", "", before["content-b64"], before["sha256"])
+    assert not calls
+    assert work.deployment_state() == state
+
+
+def test_noncanonical_base64_cannot_bypass_unchanged_recovery_guard(instance):
+    work, calls = instance
+    before = work.read("global")
+    encoded = before["content-b64"]
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    index = len(encoded.rstrip("=")) - 1
+    alternate = (
+        encoded[:index] + alphabet[alphabet.index(encoded[index]) + 1] + encoded[index + 1 :]
+    )
+    assert alternate != encoded and base64.b64decode(alternate) == base64.b64decode(encoded)
+    with work._lock():
+        work.save_deployment_state(
+            {"error": "rollback failed", "error-files": ["config"], "recovery-required": ["config"]}
+        )
+    with pytest.raises(WorkloadError, match="recovery required"):
+        work.update("global", "", alternate, before["sha256"])
+    assert not calls
