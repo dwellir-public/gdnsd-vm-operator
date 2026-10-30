@@ -191,6 +191,46 @@ An unavailable running version does not erase the last version
 Juju observed. Install, refresh and successful service/configuration actions
 also refresh the local health status.
 
+## SOA serial visibility
+
+Every status observation discovers local zone files and compares each file's apex
+SOA serial with an authoritative, nonrecursive TCP SOA answer from localhost.
+Different zones may have different serials. Compare corresponding zones across
+units when checking a rollout. The running gdnsd software version remains separate.
+
+The status message appends a compact SOA summary before the GeoIP summary. Each
+entry shows `configured/served`, for example:
+
+```text
+running; SOA example.org 42/42 in sync; lab.example.org 17/17 in sync; GeoIP not installed
+```
+
+A serial mismatch, missing SOA, failed query or unreadable file produces waiting
+status while the daemon remains healthy. Existing service, deployment and
+configuration errors keep their priority. Observations do not reload or restart
+gdnsd. A later successful observation clears the SOA waiting condition. A fresh
+unit with no zone files remains healthy.
+
+`juju run gdnsd-vm/0 get-info` adds:
+
+- `zone-serials-json`: a JSON object keyed by original zone filename, with integer
+  `configured-serial` and `served-serial` when known, `in-sync`, and an `error`
+  when observation fails. Unknown serials are omitted; a real serial of zero is
+  retained. JSON preserves literal domain names across Juju action-result keys.
+- `zone-serials-ok`: whether all discovered zones were inspected and matched.
+- `zone-serials-summary` and `zone-serials-error`: bounded summaries. The complete
+  per-zone error map and diagnostic logs retain details omitted from status.
+
+SOA queries have a one-second timeout and a five-second total inspection budget.
+Discovered but uninspected zones remain visible with a budget diagnostic.
+If discovery itself exceeds the budget, its partial result is reported as an error. Zone files larger than
+2 MiB produce an inspection error. Comments, multiline SOA records, TTL units,
+origins and gdnsd filename conventions are supported. Included files are not
+followed; an explicit apex SOA in the main file is inspected normally, while an
+SOA available only through `$INCLUDE` produces an unsupported-inspection diagnostic.
+The action's `active` field describes daemon health; use `zone-serials-ok` for
+serial agreement.
+
 ## Actions and diagnostics
 
 Read and apply configuration through `get-config`, `validate-config` and

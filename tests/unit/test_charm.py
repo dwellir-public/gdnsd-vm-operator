@@ -730,3 +730,81 @@ def test_repair_read_failure_is_observed_without_crashing(ctx, workload):
     host.read.side_effect = WorkloadError("configuration paths must not be symlinks")
     state = ctx.run(ctx.on.update_status(), State())
     assert isinstance(state.unit_status, ops.BlockedStatus)
+
+
+def test_soa_mismatch_waits_then_recovers_from_fresh_observation(ctx, workload):
+    _, host = workload
+    summary = "SOA example.test 42/41 error"
+    host.health.return_value |= {
+        "zone-serials-ok": False,
+        "zone-serials-summary": summary,
+        "zone-serials-error": "example.test: configured 42, served 41",
+        "geoip-summary": GEOIP_SUMMARY,
+    }
+    state = ctx.run(ctx.on.update_status(), State())
+    assert isinstance(state.unit_status, ops.WaitingStatus)
+    assert "SOA" in state.unit_status.message
+    assert "configured 42, served 41" in state.unit_status.message
+    assert state.unit_status.message.count(summary) == 1
+    assert state.unit_status.message.count(GEOIP_SUMMARY) == 1
+    host.health.return_value |= {
+        "zone-serials-ok": True,
+        "zone-serials-summary": "SOA example.test 42/42 in sync",
+        "zone-serials-error": "",
+    }
+    state = ctx.run(ctx.on.update_status(), state)
+    assert isinstance(state.unit_status, ops.ActiveStatus)
+    assert "42/42" in state.unit_status.message
+    host.install.assert_not_called()
+    host.service.assert_not_called()
+    host.update.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", ["service", "deployment", "configuration"])
+def test_soa_problem_does_not_mask_existing_failure(ctx, workload, failure):
+    _, host = workload
+    host.health.return_value |= {
+        "zone-serials-ok": False,
+        "zone-serials-summary": "SOA example.test 42/41 error",
+        "zone-serials-error": "serial mismatch",
+    }
+    state = State()
+    if failure == "service":
+        host.health.return_value |= {"healthy": False, "message": "daemon stopped"}
+        expected = "daemon stopped"
+    elif failure == "deployment":
+        host.deployment_state.return_value = {"error": "failed SSH reload"}
+        expected = "SSH configuration deployment failed"
+    else:
+        state = failed_zone_state(ctx, workload)
+        expected = "Supply a valid configuration for zone:example.org"
+    state = ctx.run(ctx.on.update_status(), state)
+    assert state.unit_status.message.startswith(expected)
+    assert "SOA example.test" in state.unit_status.message
+
+
+def test_get_info_preserves_soa_map_as_json(ctx, workload):
+    import json
+
+    _, host = workload
+    zones = {"example.test": {"configured-serial": 42, "served-serial": 42, "in-sync": True}}
+    host.info.return_value |= {"zone-serials-json": json.dumps(zones), "zone-serials-ok": True}
+    ctx.run(ctx.on.action("get-info"), State())
+    assert json.loads(ctx.action_results["zone-serials-json"]) == zones
+    assert ctx.action_results["zone-serials-ok"] is True
+
+
+def test_soa_problem_keeps_invalid_request_error_priority(ctx, workload):
+    _, host = workload
+    host.health.return_value |= {
+        "zone-serials-ok": False,
+        "zone-serials-summary": "SOA example.test 42/41 error",
+        "zone-serials-error": "serial mismatch",
+    }
+    host.read.side_effect = ValueError("malformed zone target")
+    with pytest.raises(ops.testing.ActionFailed) as failure:
+        ctx.run(ctx.on.action("get-config", params={"zone": "../unsafe"}), State())
+    assert failure.value.state.unit_status.message.startswith(
+        "Supply a valid configuration request"
+    )
+    assert "SOA example.test" in failure.value.state.unit_status.message

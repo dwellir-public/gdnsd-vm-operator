@@ -16,6 +16,22 @@ Config-changed and update-status observe service state. They do not install,
 upgrade, restart or rewrite workload files. An explicitly stopped service stays
 stopped until an operator starts it. There is no workload-upgrade feature.
 
+## SOA observation
+
+`src/soa.py` owns bounded zone discovery, main-file SOA parsing and authoritative
+localhost TCP queries using dnspython. It follows gdnsd's filename conventions,
+rejects symlink indirection and does not open includes. It reads at most 2 MiB
+per file and stops new inspections after the shared five-second budget. Failed or
+uninspected zones retain diagnostics rather than appearing synchronized.
+
+`Workload.zone_info` imports this module lazily. The standalone system-Python SSH
+helper continues to import workload/configuration modules without third-party
+packages; only charm health/info uses the packaged DNS dependency.
+`Workload.health` returns the per-zone map separately from daemon health.
+`get-info` encodes it as `zone-serials-json` to preserve zone filenames. Charm
+status appends a bounded serial summary and reports SOA failures as waiting after
+existing higher-priority errors. There are no automatic reloads or restarts.
+
 ## Local health
 
 Every status observation reads systemd ActiveState and runs `gdnsdctl -t 5 status`.

@@ -311,20 +311,24 @@ def test_health_stopped_does_not_probe_or_restart(tmp_path):
         calls.append(argv)
         return "inactive\n"
 
-    work = Workload(command=command, probe=lambda: pytest.fail("must not probe stopped service"))
+    work = Workload(
+        config_dir=tmp_path / "etc",
+        command=command,
+        probe=lambda: pytest.fail("must not probe stopped service"),
+    )
     result = work.health()
     assert not result["healthy"] and result["message"].startswith("inactive;")
     assert len(calls) == 1
 
 
-def test_health_dns_failure_is_reported_without_restart():
+def test_health_dns_failure_is_reported_without_restart(tmp_path):
     def command(argv):
         return "active" if argv[0] == "systemctl" else "info: version 3.8.2 running at PID 1234"
 
     def probe():
         raise WorkloadError("local TCP DNS timed out")
 
-    result = Workload(command=command, probe=probe).health()
+    result = Workload(config_dir=tmp_path / "etc", command=command, probe=probe).health()
     assert not result["healthy"] and "TCP DNS" in result["message"]
     assert result["workload-version"] == "3.8.2"
 
@@ -354,7 +358,7 @@ def test_dns_probe_rejects_bad_or_servfail_responses(response):
         check_dns_response(b"\x12\x34" + b"\x00" * 10, response)
 
 
-def test_info_distinguishes_package_version_from_running_version():
+def test_info_distinguishes_package_version_from_running_version(tmp_path):
     def command(argv):
         if argv[0] == "dpkg-query":
             return "3.8.2-1build2"
@@ -362,7 +366,7 @@ def test_info_distinguishes_package_version_from_running_version():
             return "active"
         return "info: version 3.8.2 running at PID 1234"
 
-    info = Workload(command=command, probe=lambda: None).info()
+    info = Workload(config_dir=tmp_path / "etc", command=command, probe=lambda: None).info()
     assert info["package-version"] == "3.8.2-1build2"
     assert info["workload-version"] == "3.8.2"
     assert info["state"] == "running"
