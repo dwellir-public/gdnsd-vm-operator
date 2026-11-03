@@ -135,6 +135,32 @@ def test_bridge_validates_every_transition_before_writes(manager):
     ]
 
 
+def test_zone_only_change_checks_only_new_candidate_tree(manager):
+    host, calls = manager
+    payload = request(host)
+    payload["files"]["config"] = enc("old global")
+    checked = []
+
+    def command(argv):
+        if argv[-1] == "checkconf":
+            candidate = Path(argv[2])
+            checked.append((candidate / "config").read_text())
+        return "active"
+
+    host.workload.command = command
+    host.handle(payload | {"operation": "validate", "bridge-b64": enc("old global")})
+    assert checked == ["old global"]
+
+
+def test_validate_unchanged_bundle_still_checks_live_tree(manager):
+    host, calls = manager
+    payload = request(host)
+    payload["files"]["config"] = enc("old global")
+    payload["files"]["zones/example.org"] = enc("old zone")
+    host.handle(payload | {"operation": "validate", "bridge-b64": enc("old global")})
+    assert len([argv for argv in calls if argv[-1] == "checkconf"]) == 1
+
+
 def test_activation_failure_restores_all_files_and_metadata(manager):
     host, calls = manager
     payload = request(host, **{"bridge-b64": enc("bridge")})

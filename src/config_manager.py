@@ -222,10 +222,16 @@ class Manager:
         with tempfile.TemporaryDirectory(prefix="release-", dir=work.state_dir) as directory:
             candidate = Path(directory) / "gdnsd"
             shutil.copytree(work.config_dir, candidate)
+            checked = False
             for name, content in stages:
                 selected = candidate / name
+                if selected.exists() and selected.read_bytes() == content:
+                    continue
                 selected.parent.mkdir(parents=True, exist_ok=True)
                 selected.write_bytes(content)
+                work.command(["gdnsd", "-c", str(candidate), "checkconf"])
+                checked = True
+            if not checked:
                 work.command(["gdnsd", "-c", str(candidate), "checkconf"])
         if validate_only:
             return {"changed": False, "validated": True, "checksums": checksums, "files": checksums}
