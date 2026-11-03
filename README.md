@@ -1,8 +1,9 @@
 # gdnsd-vm
 
-A Juju machine charm for the gdnsd authoritative DNS server on Ubuntu 24.04.
-It installs the prebuilt package from Ubuntu's signed APT repositories when the
-package is absent. It adopts an existing installation and preserves its files.
+A Juju machine charm for [gdnsd](https://gdnsd.org/), an authoritative DNS
+server, on Ubuntu 24.04. It installs the prebuilt package from Ubuntu's signed
+APT repositories when the package is absent. It adopts an existing installation
+and preserves its files.
 Package upgrades remain an operator responsibility. Refreshing the charm does
 not upgrade gdnsd or restart the service.
 
