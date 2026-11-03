@@ -139,6 +139,8 @@ activation, rollback and release checkpoint writes. Mandatory deployment identit
 comparison uses a SHA256 of canonical `release` and `files` checkpoint maps, so a
 stale writer cannot overwrite release metadata through an identical-file apply. A bridge configuration
 supports resource renames across zone reloads. Unselected zones remain intact.
+Candidate validation checks each changed intermediate tree; identical stages
+are skipped. An unchanged validate request checks the complete tree once.
 Existing `Workload` path, atomic-write, ownership, activation and lock helpers
 are reused without calling the single-file action transaction recursively.
 

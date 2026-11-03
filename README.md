@@ -347,7 +347,12 @@ Deployment state also includes error and repair information used by charm status
 
 For resource renames, supply `bridge-b64` containing both old and new global
 resource definitions. The helper validates the bridge with existing zones,
-each selected new zone under the bridge, then the final global configuration.
+each changed selected zone under the bridge, then the changed final global
+configuration.
+It runs `gdnsd checkconf` after each stage that changes the staged tree and
+skips duplicate stages. If a validate request changes no staged file, it still
+checks the complete tree once. A zone-only release with unchanged global
+configuration does not need a bridge.
 All validation precedes live writes. Apply activates those same stages in order,
 with `replace` for globals and `reload-zones` for zones. Failed activation restores
 all affected files and their ownership/modes, then activates the original tree.
