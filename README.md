@@ -279,14 +279,22 @@ juju integrate -m "$MODEL" alloy-sub:send-loki-logs cos-loki:logging
 juju integrate -m "$MODEL" gdnsd-vm:grafana-dashboard cos-grafana:grafana-dashboard
 ```
 
-The v3 declaration includes gdnsd and exporter journals and no alert artifacts.
+The v3 declaration includes gdnsd and exporter journals and a Prometheus alert
+artifact. `GdnsdDown` fires after two minutes if Prometheus cannot scrape the
+exporter (`up == 0`) or the exporter cannot collect native gdnsd statistics
+(`gdnsd_scrape_success == 0`). The rule selects this Juju model UUID and
+application. The `up` branch also selects the gdnsd exporter job, so a failed
+host-metrics scrape does not trigger this alert. The reported `juju_unit` comes
+from the failing metric series.
+If Alloy or the remote-write path stops sending all samples, this rule cannot
+identify the missing unit; monitor that path separately.
 Metrics scrape every 15 seconds. Alloy derives each principal unit from its
 juju-info relation and forwards the source model, model UUID, application,
 unit and charm labels. The leader publishes the shared source declaration.
 
 The `gdnsd native server metrics` dashboard displays request rates, response
 codes, transport errors, uptime, collection status and journals. It has model
-and unit selectors. No alert thresholds are configured.
+and unit selectors. The availability alert is the only configured threshold.
 
 Useful PromQL, scoped further with the source Juju labels as needed:
 
