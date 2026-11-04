@@ -69,7 +69,10 @@ def payload(charm):
                 "rules": [
                     {
                         "alert": "GdnsdDown",
-                        "expr": f"up{{{selector}}} == 0 or gdnsd_scrape_success{{{selector}}} == 0",
+                        "expr": (
+                            f"up{{job={json.dumps(charm.app.name)},{selector}}} == 0 or "
+                            f"gdnsd_scrape_success{{{selector}}} == 0"
+                        ),
                         "for": "2m",
                         "labels": {"severity": "critical"},
                         "annotations": {

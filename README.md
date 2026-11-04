@@ -283,7 +283,9 @@ The v3 declaration includes gdnsd and exporter journals and a Prometheus alert
 artifact. `GdnsdDown` fires after two minutes if Prometheus cannot scrape the
 exporter (`up == 0`) or the exporter cannot collect native gdnsd statistics
 (`gdnsd_scrape_success == 0`). The rule selects this Juju model UUID and
-application; the reported `juju_unit` comes from the failing metric series.
+application. The `up` branch also selects the gdnsd exporter job, so a failed
+host-metrics scrape does not trigger this alert. The reported `juju_unit` comes
+from the failing metric series.
 If Alloy or the remote-write path stops sending all samples, this rule cannot
 identify the missing unit; monitor that path separately.
 Metrics scrape every 15 seconds. Alloy derives each principal unit from its

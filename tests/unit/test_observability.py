@@ -29,7 +29,7 @@ def test_relation_publishes_principal_topology():
     rule = rules["groups"][0]["rules"][0]
     assert rule["alert"] == "GdnsdDown"
     selector = f'juju_model_uuid="{state.model.uuid}",juju_application="gdnsd-vm"'
-    assert f"up{{{selector}}} == 0" in rule["expr"]
+    assert f'up{{job="gdnsd-vm",{selector}}} == 0' in rule["expr"]
     assert f"gdnsd_scrape_success{{{selector}}} == 0" in rule["expr"]
     assert rule["for"] == "2m"
     assert rule["annotations"]["runbook_url"] == (
