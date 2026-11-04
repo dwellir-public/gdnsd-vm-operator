@@ -1,5 +1,6 @@
 """Manage the auxiliary exporter without changing the DNS daemon."""
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from charms.dwellir_observability.v0.machine_observability import (
     MachineObservabilityProvider,
     MetricsEndpoint,
     SourceTopology,
+    encode_artifact,
 )
 
 SERVICE = "gdnsd-exporter.service"
@@ -56,6 +58,32 @@ class Exporter:
 
 def payload(charm):
     """Declare principal identity rather than the subordinate collector identity."""
+    selector = (
+        "juju_model_uuid=" + json.dumps(charm.model.uuid) + ","
+        "juju_application=" + json.dumps(charm.app.name)
+    )
+    rules = {
+        "groups": [
+            {
+                "name": "gdnsd-availability",
+                "rules": [
+                    {
+                        "alert": "GdnsdDown",
+                        "expr": f"up{{{selector}}} == 0 or gdnsd_scrape_success{{{selector}}} == 0",
+                        "for": "2m",
+                        "labels": {"severity": "critical"},
+                        "annotations": {
+                            "summary": "gdnsd is unavailable on {{ $labels.juju_unit }}",
+                            "description": (
+                                "The exporter scrape failed or gdnsd native stats "
+                                "could not be collected for two minutes."
+                            ),
+                        },
+                    }
+                ],
+            }
+        ]
+    }
     return MachineObservabilityPayload(
         schema_version=3,
         charm_name=charm.meta.name,
@@ -63,7 +91,7 @@ def payload(charm):
             model=charm.model.name,
             model_uuid=charm.model.uuid,
             application=charm.app.name,
-            unit=charm.unit.name,
+            unit="",
             charm_name=charm.meta.name,
         ),
         metrics_endpoints=[
@@ -74,7 +102,13 @@ def payload(charm):
             )
         ],
         systemd_units=["gdnsd.service", SERVICE],
-        artifacts=[],
+        artifacts=[
+            encode_artifact(
+                artifact_type="prometheus_alert_rules",
+                artifact_id="gdnsd-availability",
+                content=json.dumps(rules, sort_keys=True).encode(),
+            )
+        ],
     )
 
 

@@ -118,7 +118,10 @@ changes republish the declaration. All units declare the same local endpoint
 and journals. The compatible Alloy collector obtains the actual colocated
 principal unit from juju-info before considering the payload topology fallback.
 This preserves per-unit source labels even for a multiunit application.
-The payload contains no alert artifacts. Grafana dashboards use the separate
+The payload contains one Prometheus alert artifact for `GdnsdDown`. The
+application-wide declaration omits a fixed source unit so alert results keep
+the affected metric series' actual `juju_unit`. Alloy obtains each colocated
+unit from juju-info for telemetry. Grafana dashboards use the separate
 Grafana relation. Library origins and hashes are recorded in
 [vendored libraries](docs/libraries.md).
 

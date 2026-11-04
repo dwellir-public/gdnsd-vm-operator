@@ -1,5 +1,7 @@
 """Verify telemetry identity and refresh preservation."""
 
+import base64
+import gzip
 import json
 from unittest.mock import patch
 
@@ -17,10 +19,19 @@ def test_relation_publishes_principal_topology():
     data = json.loads(state.get_relation(relation.id).local_app_data["payload"])
     assert data["schema_version"] == 3
     assert data["source_topology"]["application"] == "gdnsd-vm"
-    assert data["source_topology"]["unit"] == "gdnsd-vm/0"
+    assert data["source_topology"]["unit"] == ""
     assert data["source_topology"]["model_uuid"] == state.model.uuid
     assert data["metrics_endpoints"][0]["targets"] == ["127.0.0.1:9153"]
-    assert data["artifacts"] == []
+    assert len(data["artifacts"]) == 1
+    artifact = data["artifacts"][0]
+    assert artifact["artifact_type"] == "prometheus_alert_rules"
+    rules = json.loads(gzip.decompress(base64.b64decode(artifact["content"])))
+    rule = rules["groups"][0]["rules"][0]
+    assert rule["alert"] == "GdnsdDown"
+    selector = f'juju_model_uuid="{state.model.uuid}",juju_application="gdnsd-vm"'
+    assert f"up{{{selector}}} == 0" in rule["expr"]
+    assert f"gdnsd_scrape_success{{{selector}}} == 0" in rule["expr"]
+    assert rule["for"] == "2m"
 
 
 def test_exporter_refresh_changes_only_auxiliary_service(tmp_path):
