@@ -32,6 +32,11 @@ def test_relation_publishes_principal_topology():
     assert f"up{{{selector}}} == 0" in rule["expr"]
     assert f"gdnsd_scrape_success{{{selector}}} == 0" in rule["expr"]
     assert rule["for"] == "2m"
+    assert rule["annotations"]["runbook_url"] == (
+        "https://docs.internal.dwellir.com/docs/operations/"
+        "grafana_alert_runbooks/gra_0017_gdnsd_down"
+    )
+    assert rule["annotations"]["summary"].startswith("[GRA-0017]")
 
 
 def test_exporter_refresh_changes_only_auxiliary_service(tmp_path):

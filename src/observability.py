@@ -73,10 +73,14 @@ def payload(charm):
                         "for": "2m",
                         "labels": {"severity": "critical"},
                         "annotations": {
-                            "summary": "gdnsd is unavailable on {{ $labels.juju_unit }}",
+                            "summary": "[GRA-0017] gdnsd is unavailable on {{ $labels.juju_unit }}",
                             "description": (
                                 "The exporter scrape failed or gdnsd native stats "
                                 "could not be collected for two minutes."
+                            ),
+                            "runbook_url": (
+                                "https://docs.internal.dwellir.com/docs/operations/"
+                                "grafana_alert_runbooks/gra_0017_gdnsd_down"
                             ),
                         },
                     }
