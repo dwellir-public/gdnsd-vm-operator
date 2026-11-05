@@ -19,7 +19,8 @@ challenges. It does not provide a general API for editing persistent records.
 
 A configuration replacement uses the installed binary and preserves its version.
 The charm uses the local Unix control socket. It does not expose a TCP management
-listener. Juju provides authenticated access to the charm's configuration actions.
+listener. Operators can submit updates through Juju actions or the restricted SSH
+helper described below.
 
 For every update, the charm:
 
@@ -44,9 +45,14 @@ DNSControl can generate ordinary zone files, but cannot replace gdnsd's validato
 for its dynamic records and plugin configuration. Use the native validator for
 these updates.
 
-## Pull and push
+## Update configuration with a Juju client
 
-Run the scripts from this repository with Python 3.10 or later and Juju 3.6.
+Use this path for an operator working from a workstation with model access.
+The scripts call the charm's `get-config` and `update-config` actions through
+Juju. The workstation needs Python 3.10 or later, Juju 3.6 and permission to
+run actions on the selected unit. It needs no SSH deployment key.
+
+Run the scripts from this repository.
 Each target must include its controller and model. Pull saves an editable file
 and a `.orig.json` file containing the original checksum and target identity.
 
@@ -97,6 +103,57 @@ and verifies their SHA-256 digest before writing the file. Use the updated scrip
 with this charm revision. Small reads retain the existing `content-b64` field.
 Direct action consumers must join `content-b64-part-0000` and subsequent numbered
 fields according to `content-b64-part-count`, then decode the combined base64.
+
+## Release configuration from GitHub Actions over SSH
+
+Use this path when a separate repository holds the approved configuration. The
+release runner needs SSH access to each authority. It does not need a Juju
+client, controller credentials or model access. Juju remains
+responsible for deploying and refreshing the charm. The charm installs the
+[host helper](#restricted-ssh-configuration-management) on each machine.
+
+Keep the native `config` file and each `zones/<zone>` file in the configuration
+repository. A small repository can start with this layout:
+
+```text
+config
+zones/example.com
+targets.json
+known_hosts
+.github/workflows/release.yml
+```
+
+Keep a fixed target inventory and a `known_hosts` file whose host keys were
+checked through a trusted administrative path. Store one private
+deployment key per authority as a protected GitHub Actions secret. Install the
+matching public key on that authority under a dedicated account, then restrict
+it with the [SSH and sudo rules](#ssh-and-sudo-access) below. The charm does not
+create this account or install keys.
+
+The release workflow has two stages:
+
+1. On a pull request, check native syntax with packaged gdnsd, compare the
+   proposed configuration and zone serials with the approved revision, and run
+   isolated tests. This stage has no deployment keys.
+2. After a reviewed merge to `main`, use a protected production environment
+   and a serialized job. Write each secret to a temporary key file, call the
+   helper over SSH, then remove the files. A manual workflow run can perform
+   read-only snapshot or verification without applying a release.
+
+For each release, the runner snapshots every target and checks for drift. It
+asks every helper to validate the complete candidate before any target changes.
+It then applies and verifies one selected authority, followed by the remaining
+authorities concurrently. Save per-target progress, before and after snapshots,
+checksums and failures as workflow artifacts. A failure after the first apply
+requires an operator to inspect which authorities completed; the helper can
+roll back a failed *local* transaction, but there is no rollback across machines.
+
+The runner sends a versioned JSON request on SSH standard input and reads one
+JSON response. It uses `snapshot`, `validate`, `apply` and `status`; it never
+uploads a shell script or writes directly to `/etc/gdnsd`. Include the snapshot
+file digests and deployment token in each validation or apply request so a
+concurrent change stops the release. See the [protocol](#host-helper-protocol)
+for the fields and transaction behavior.
 
 ## Deployment
 
@@ -318,18 +375,49 @@ files without restarting gdnsd or changing its package, configuration or GeoIP
 database. The helper runs with the system Python and uses only its standard
 library. Existing Juju actions and relations remain available.
 
-Provision deployment accounts, keys, sudo policy and trusted SSH host keys
-separately. Restrict each deployment key to the exact forced command
-`sudo -n /usr/local/sbin/gdnsd-config-manager ssh`, with forwarding and PTYs
-disabled. The charm does not create accounts or credentials.
+### SSH and sudo access
+
+The helper needs root access to read and replace gdnsd files, run native
+validation and use the local control socket. Give the deployment account sudo
+permission for only this command, with no password prompt. For example, use a
+dedicated `gdnsd-deploy` account and a root-owned sudoers file:
+
+```sudoers
+gdnsd-deploy ALL=(root) NOPASSWD: /usr/local/sbin/gdnsd-config-manager ssh
+```
+
+Restrict that account's public key in `authorized_keys`. Replace the example
+key with the public half of the secret held by the release environment:
+
+```text
+restrict,command="sudo -n /usr/local/sbin/gdnsd-config-manager ssh" ssh-ed25519 AAAA... release-key
+```
+
+OpenSSH's `restrict` option disables PTYs and forwarding. The forced command
+ignores any command requested by the SSH client. The sudo rule grants only the
+fixed helper entry point, and `sudo -n` fails if the rule is missing. Keep the
+account, `authorized_keys` and sudoers file under administrator control. Make
+the sudoers file root-owned and mode `0440`; check the proposed file with
+`visudo -cf /path/to/proposed-file` before installing it. Do not grant general
+passwordless sudo or shell access through this key.
+
+Pin each host key in the release runner's `known_hosts` file and require strict
+host-key checking. Obtain the host key independently before committing it;
+do not accept a new key during a deployment. Use separate keys per authority
+so one key can be revoked without replacing all of them. The host helper and
+its Python sources are root-owned. Charm refresh reconciles them without
+restarting gdnsd.
+
+### Host helper protocol
 
 The command reads one bounded JSON request on stdin and writes one JSON response
 on stdout. Every request requires `"version":1` and an `operation`. Responses are
 `{"version":1,"ok":true,"result":{...}}`, or
 `{"version":1,"ok":false,"error":"..."}` with a nonzero exit status.
 
-- `snapshot` accepts an optional `zones` list, defaulting to `n.dwellir.com` and
-  `x.dwellir.com`. `result.files` contains `config` and selected `zones/<fqdn>`
+- `snapshot` accepts an optional `zones` list. Pass it explicitly when writing
+  a new client; omission uses the helper's built-in default selection.
+  `result.files` contains `config` and selected `zones/<fqdn>`
   entries with `sha256`, `content-b64` and `exists`. A missing file has digest
   `absent`. `result.deployment` contains the last release checkpoint, or `{}`
   before initialization. `result.deployment-token` is the SHA256 of canonical
